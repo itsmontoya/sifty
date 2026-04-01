@@ -2,15 +2,15 @@ package query
 
 import "testing"
 
-func TestRangeExprValidate(t *testing.T) {
+func TestCompareExprValidate(t *testing.T) {
 	tt := []struct {
 		name    string
-		in      RangeExpr
+		in      CompareExpr
 		wantErr bool
 	}{
 		{
 			name: "valid with gte and lt",
-			in: RangeExpr{
+			in: CompareExpr{
 				Field: "score",
 				Gte:   10,
 				Lt:    100,
@@ -18,14 +18,14 @@ func TestRangeExprValidate(t *testing.T) {
 		},
 		{
 			name: "missing field",
-			in: RangeExpr{
+			in: CompareExpr{
 				Gte: 10,
 			},
 			wantErr: true,
 		},
 		{
 			name: "missing bounds",
-			in: RangeExpr{
+			in: CompareExpr{
 				Field: "score",
 			},
 			wantErr: true,
