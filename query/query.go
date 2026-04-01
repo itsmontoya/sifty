@@ -18,7 +18,7 @@ func (q Query) Validate() error {
 		return fmt.Errorf("offset must be >= 0")
 	}
 
-	if q.Filter.IsZero() {
+	if !q.Filter.IsZero() {
 		if err := q.Filter.Validate(); err != nil {
 			return fmt.Errorf("invalid filter: %w", err)
 		}
