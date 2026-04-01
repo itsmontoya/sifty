@@ -84,3 +84,22 @@ func (c Clause) Validate() error {
 
 	return nil
 }
+
+func (c Clause) IsZero() bool {
+	switch {
+	case len(c.And) > 0:
+		return false
+	case len(c.Or) > 0:
+		return false
+	case c.Not != nil && !c.Not.IsZero():
+		return false
+	case c.Term != nil:
+		return false
+	case c.Contains != nil:
+		return false
+	case c.Range != nil:
+		return false
+	default:
+		return true
+	}
+}
