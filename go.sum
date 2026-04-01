@@ -1,0 +1,6 @@
+github.com/itsmontoya/bst v1.1.1 h1:AcTN9b16LGwyuholkDDFgNehKVad9ioqzWw6rDCi5Ec=
+github.com/itsmontoya/bst v1.1.1/go.mod h1:0Znz4GJzZNmKOPTmx9Gr/CJwyDAsXUrxk0xS4rxfK+M=
+github.com/itsmontoya/iodb v0.4.4 h1:tTBrpbMqSp5LasNgVXdwKC5glKRMpmETAPQOnbC6O/c=
+github.com/itsmontoya/iodb v0.4.4/go.mod h1:qYlrDAZ8DqxWI8dkfNyPWuJR/r2+VVJLsFh2viwEzv8=
+github.com/itsmontoya/streambuf v0.8.0 h1:ukxq3l8lwa9tuslq8rNphMQG0BPkb+QygFlTN3UrdpM=
+github.com/itsmontoya/streambuf v0.8.0/go.mod h1:ywGe7nXRwp7+6i0kEAblzXJyybm2lSaP4PiB/KZA+HY=
