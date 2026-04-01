@@ -7,9 +7,8 @@ type Clause struct {
 	Or  []Clause `json:"or,omitempty"`
 	Not *Clause  `json:"not,omitempty"`
 
-	Term     *TermExpr     `json:"term,omitempty"`
 	Contains *ContainsExpr `json:"contains,omitempty"`
-	Range    *RangeExpr    `json:"range,omitempty"`
+	Compare  *CompareExpr  `json:"compare,omitempty"`
 }
 
 func (c Clause) Validate() error {
@@ -26,15 +25,11 @@ func (c Clause) Validate() error {
 		set++
 	}
 
-	if c.Term != nil {
-		set++
-	}
-
 	if c.Contains != nil {
 		set++
 	}
 
-	if c.Range != nil {
+	if c.Compare != nil {
 		set++
 	}
 
@@ -64,20 +59,14 @@ func (c Clause) Validate() error {
 		}
 	}
 
-	if c.Term != nil {
-		if err := c.Term.Validate(); err != nil {
-			return err
-		}
-	}
-
 	if c.Contains != nil {
 		if err := c.Contains.Validate(); err != nil {
 			return err
 		}
 	}
 
-	if c.Range != nil {
-		if err := c.Range.Validate(); err != nil {
+	if c.Compare != nil {
+		if err := c.Compare.Validate(); err != nil {
 			return err
 		}
 	}
@@ -93,11 +82,9 @@ func (c Clause) IsZero() bool {
 		return false
 	case c.Not != nil && !c.Not.IsZero():
 		return false
-	case c.Term != nil:
-		return false
 	case c.Contains != nil:
 		return false
-	case c.Range != nil:
+	case c.Compare != nil:
 		return false
 	default:
 		return true
