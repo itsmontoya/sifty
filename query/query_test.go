@@ -20,7 +20,7 @@ func TestQueryValidate(t *testing.T) {
 		{
 			name: "valid",
 			in: Query{
-				Filter: &Clause{
+				Filter: Clause{
 					And: []Clause{
 						{
 							Term: &TermExpr{
@@ -61,7 +61,7 @@ func TestQueryValidate(t *testing.T) {
 		{
 			name: "invalid filter",
 			in: Query{
-				Filter: &Clause{},
+				Filter: Clause{},
 			},
 			errSubstr: "invalid filter:",
 		},

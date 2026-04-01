@@ -3,7 +3,7 @@ package query
 import "fmt"
 
 type Query struct {
-	Filter *Clause     `json:"filter,omitempty"`
+	Filter Clause      `json:"filter,omitempty"`
 	Sort   []SortField `json:"sort,omitempty"`
 	Limit  *int        `json:"limit,omitempty"`
 	Offset int         `json:"offset,omitempty"`
@@ -18,7 +18,7 @@ func (q Query) Validate() error {
 		return fmt.Errorf("offset must be >= 0")
 	}
 
-	if q.Filter != nil {
+	if q.Filter.IsZero() {
 		if err := q.Filter.Validate(); err != nil {
 			return fmt.Errorf("invalid filter: %w", err)
 		}
