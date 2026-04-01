@@ -2,7 +2,7 @@ package matcher
 
 import "github.com/itsmontoya/sifty/query"
 
-func makeRangeNode(in *query.RangeExpr) (out compareNode, err error) {
+func makeCompareNode(in *query.CompareExpr) (out compareNode, err error) {
 	out.field = in.Field
 	out.gt = in.Gt
 	out.gte = in.Gte

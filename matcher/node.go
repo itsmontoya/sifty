@@ -16,12 +16,10 @@ func toNode(in query.Clause) (n node, err error) {
 		return makeAndNode(in.Or)
 	case in.Not != nil:
 		return makeNotNode(in.Not)
-	case in.Term != nil:
-		return makeTermNode(in.Term)
 	case in.Contains != nil:
 		return makeContainsNode(in.Contains)
-	case in.Range != nil:
-		return makeRangeNode(in.Range)
+	case in.Compare != nil:
+		return makeCompareNode(in.Compare)
 	default:
 		return nil, errors.New("invalid clause, needs to have at least one set")
 	}
