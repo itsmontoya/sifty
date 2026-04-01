@@ -14,9 +14,9 @@ func TestClauseValidate(t *testing.T) {
 		{
 			name: "invalid multiple operators",
 			in: Clause{
-				Term: &TermExpr{
+				Compare: &CompareExpr{
 					Field: "status",
-					Value: "active",
+					Eq:    "active",
 				},
 				Contains: &ContainsExpr{
 					Field: "title",
@@ -26,15 +26,15 @@ func TestClauseValidate(t *testing.T) {
 			errSubstr: "clause must define exactly one operator",
 		},
 		{
-			name: "invalid no operator",
-			in:   Clause{},
+			name:      "invalid no operator",
+			in:        Clause{},
 			errSubstr: "clause must define exactly one operator",
 		},
 		{
 			name: "invalid and subclause",
 			in: Clause{
 				And: []Clause{
-					{Term: &TermExpr{Field: "status", Value: "active"}},
+					{Compare: &CompareExpr{Field: "status", Eq: "active"}},
 					{},
 				},
 			},
@@ -44,7 +44,7 @@ func TestClauseValidate(t *testing.T) {
 			name: "invalid or subclause",
 			in: Clause{
 				Or: []Clause{
-					{Term: &TermExpr{Field: "status", Value: "active"}},
+					{Compare: &CompareExpr{Field: "status", Eq: "active"}},
 					{},
 				},
 			},
@@ -61,16 +61,9 @@ func TestClauseValidate(t *testing.T) {
 			name: "valid not",
 			in: Clause{
 				Not: &Clause{
-					Term: &TermExpr{Field: "status", Value: "active"},
+					Compare: &CompareExpr{Field: "status", Eq: "active"},
 				},
 			},
-		},
-		{
-			name: "invalid term expr",
-			in: Clause{
-				Term: &TermExpr{},
-			},
-			errSubstr: "term.field is required",
 		},
 		{
 			name: "invalid contains expr",
@@ -80,11 +73,11 @@ func TestClauseValidate(t *testing.T) {
 			errSubstr: "contains.field is required",
 		},
 		{
-			name: "invalid range expr",
+			name: "invalid compare expr",
 			in: Clause{
-				Range: &RangeExpr{},
+				Compare: &CompareExpr{},
 			},
-			errSubstr: "range.field is required",
+			errSubstr: "compare.field is required",
 		},
 	}
 

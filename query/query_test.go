@@ -23,13 +23,13 @@ func TestQueryValidate(t *testing.T) {
 				Filter: Clause{
 					And: []Clause{
 						{
-							Term: &TermExpr{
+							Compare: &CompareExpr{
 								Field: "status",
-								Value: "active",
+								Eq:    "active",
 							},
 						},
 						{
-							Range: &RangeExpr{
+							Compare: &CompareExpr{
 								Field: "score",
 								Gte:   10,
 								Lt:    100,
