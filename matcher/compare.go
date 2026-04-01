@@ -57,6 +57,11 @@ func compareany[T cmp.Ordered](a T, b any) (c comparison) {
 	}
 }
 
+func isEqualTo(a, b any) (ok bool) {
+	c := compare(a, b)
+	return c == comparisonEqualTo
+}
+
 func isGreaterThan(a, b any) (ok bool) {
 	c := compare(a, b)
 	return c == comparisonGreaterThan
