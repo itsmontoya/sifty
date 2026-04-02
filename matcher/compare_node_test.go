@@ -3,67 +3,7 @@ package matcher
 import (
 	"errors"
 	"testing"
-
-	"github.com/itsmontoya/sifty/query"
 )
-
-func TestMakeCompareNode(t *testing.T) {
-	tt := []struct {
-		name string
-		in   *query.CompareExpr
-	}{
-		{
-			name: "copies supported bounds",
-			in: &query.CompareExpr{
-				Field: "score",
-				Eq:    10,
-				Gt:    11,
-				Gte:   12,
-				Lt:    13,
-				Lte:   14,
-			},
-		},
-	}
-
-	for _, tc := range tt {
-		t.Run(tc.name, func(t *testing.T) {
-			var (
-				out compareNode
-				err error
-			)
-
-			out, err = makeCompareNode(tc.in)
-			if err != nil {
-				t.Fatalf("makeCompareNode() error = %v", err)
-			}
-
-			if out.field != tc.in.Field {
-				t.Fatalf("field = %q, want %q", out.field, tc.in.Field)
-			}
-
-			// Current constructor behavior copies gt/gte/lt/lte but not eq.
-			if out.eq != nil {
-				t.Fatalf("eq = %v, want nil", out.eq)
-			}
-
-			if out.gt != tc.in.Gt {
-				t.Fatalf("gt = %v, want %v", out.gt, tc.in.Gt)
-			}
-
-			if out.gte != tc.in.Gte {
-				t.Fatalf("gte = %v, want %v", out.gte, tc.in.Gte)
-			}
-
-			if out.lt != tc.in.Lt {
-				t.Fatalf("lt = %v, want %v", out.lt, tc.in.Lt)
-			}
-
-			if out.lte != tc.in.Lte {
-				t.Fatalf("lte = %v, want %v", out.lte, tc.in.Lte)
-			}
-		})
-	}
-}
 
 func TestCompareNodeEval(t *testing.T) {
 	var errExp = errors.New("failed")

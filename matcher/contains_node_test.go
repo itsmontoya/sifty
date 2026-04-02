@@ -3,46 +3,7 @@ package matcher
 import (
 	"errors"
 	"testing"
-
-	"github.com/itsmontoya/sifty/query"
 )
-
-func TestMakeContainsNode(t *testing.T) {
-	tt := []struct {
-		name string
-		in   *query.ContainsExpr
-	}{
-		{
-			name: "copies field and value",
-			in: &query.ContainsExpr{
-				Field: "title",
-				Value: "go",
-			},
-		},
-	}
-
-	for _, tc := range tt {
-		t.Run(tc.name, func(t *testing.T) {
-			var (
-				out containsNode
-				err error
-			)
-
-			out, err = makeContainsNode(tc.in)
-			if err != nil {
-				t.Fatalf("makeContainsNode() error = %v", err)
-			}
-
-			if out.field != tc.in.Field {
-				t.Fatalf("field = %q, want %q", out.field, tc.in.Field)
-			}
-
-			if out.value != tc.in.Value {
-				t.Fatalf("value = %q, want %q", out.value, tc.in.Value)
-			}
-		})
-	}
-}
 
 func TestContainsNodeEval(t *testing.T) {
 	var errExp = errors.New("failed")

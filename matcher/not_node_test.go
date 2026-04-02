@@ -3,44 +3,7 @@ package matcher
 import (
 	"errors"
 	"testing"
-
-	"github.com/itsmontoya/sifty/query"
 )
-
-func TestMakeNotNode(t *testing.T) {
-	tt := []struct {
-		name string
-		in   *query.Clause
-	}{
-		{
-			name: "constructs child",
-			in: &query.Clause{
-				Contains: &query.ContainsExpr{
-					Field: "title",
-					Value: "go",
-				},
-			},
-		},
-	}
-
-	for _, tc := range tt {
-		t.Run(tc.name, func(t *testing.T) {
-			var (
-				out notNode
-				err error
-			)
-
-			out, err = makeNotNode(tc.in)
-			if err != nil {
-				t.Fatalf("makeNotNode() error = %v", err)
-			}
-
-			if _, ok := out.child.(containsNode); !ok {
-				t.Fatalf("child type = %T, want containsNode", out.child)
-			}
-		})
-	}
-}
 
 func TestNotNodeEval(t *testing.T) {
 	var errExp = errors.New("child failed")

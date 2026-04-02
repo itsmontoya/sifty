@@ -13,11 +13,6 @@ func TestToNode(t *testing.T) {
 		want any
 	}{
 		{
-			name: "zero clause returns anyNode",
-			in:   query.Clause{},
-			want: anyNode{},
-		},
-		{
 			name: "and clause returns andNode",
 			in: query.Clause{And: []query.Clause{
 				{Contains: &query.ContainsExpr{Field: "title", Value: "go"}},
@@ -50,15 +45,7 @@ func TestToNode(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			var (
-				got node
-				err error
-			)
-
-			got, err = toNode(tc.in)
-			if err != nil {
-				t.Fatalf("toNode() error = %v", err)
-			}
+			got := toNode(tc.in)
 
 			switch tc.want.(type) {
 			case anyNode:
@@ -90,4 +77,14 @@ func TestToNode(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestToNodePanic(t *testing.T) {
+	defer func() {
+		if recover() == nil {
+			t.Fatal("expected panic")
+		}
+	}()
+
+	_ = toNode(query.Clause{})
 }
