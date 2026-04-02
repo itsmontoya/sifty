@@ -1,6 +1,6 @@
 package matcher
 
-func makeAnyNode() (out anyNode, err error) {
+func makeAnyNode() (out anyNode) {
 	return
 }
 

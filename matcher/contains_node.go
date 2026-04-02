@@ -6,10 +6,10 @@ import (
 	"github.com/itsmontoya/sifty/query"
 )
 
-func makeContainsNode(in *query.ContainsExpr) (out containsNode, err error) {
+func makeContainsNode(in *query.ContainsExpr) (out containsNode) {
 	out.field = in.Field
 	out.value = in.Value
-	return out, nil
+	return out
 }
 
 type containsNode struct {

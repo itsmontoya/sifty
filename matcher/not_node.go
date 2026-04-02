@@ -1,20 +1,10 @@
 package matcher
 
-import (
-	"errors"
+import "github.com/itsmontoya/sifty/query"
 
-	"github.com/itsmontoya/sifty/query"
-)
-
-var ErrChildCannotBeEmpty = errors.New("child cannot be empty")
-
-func makeNotNode(in *query.Clause) (out notNode, err error) {
-	if in.IsZero() {
-		return out, ErrChildCannotBeEmpty
-	}
-
-	out.child, err = toNode(*in)
-	return out, err
+func makeNotNode(in *query.Clause) (out notNode) {
+	out.child = toNode(*in)
+	return out
 }
 
 type notNode struct {

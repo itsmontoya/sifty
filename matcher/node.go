@@ -1,15 +1,11 @@
 package matcher
 
 import (
-	"errors"
-
 	"github.com/itsmontoya/sifty/query"
 )
 
-func toNode(in query.Clause) (n node, err error) {
+func toNode(in query.Clause) (n node) {
 	switch {
-	case in.IsZero():
-		return makeAnyNode()
 	case len(in.And) > 0:
 		return makeAndNode(in.And)
 	case len(in.Or) > 0:
@@ -21,7 +17,7 @@ func toNode(in query.Clause) (n node, err error) {
 	case in.Compare != nil:
 		return makeCompareNode(in.Compare)
 	default:
-		return nil, errors.New("invalid clause, needs to have at least one set")
+		panic("matcher.toNode: invalid clause after validation")
 	}
 }
 

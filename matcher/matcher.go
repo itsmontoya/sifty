@@ -1,19 +1,24 @@
 package matcher
 
 import (
+	"fmt"
+
 	"github.com/itsmontoya/sifty/query"
 )
 
 func Compile(q query.Query) (out *Matcher, err error) {
 	if err = q.Validate(); err != nil {
+		fmt.Println("Oh it happens here")
 		return
 	}
 
 	var m Matcher
-	if m.root, err = toNode(q.Filter); err != nil {
-		return nil, err
+	if q.Filter.IsZero() {
+		m.root = makeAnyNode()
+		return &m, err
 	}
 
+	m.root = toNode(q.Filter)
 	return &m, nil
 }
 

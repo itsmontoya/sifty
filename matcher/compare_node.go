@@ -2,13 +2,13 @@ package matcher
 
 import "github.com/itsmontoya/sifty/query"
 
-func makeCompareNode(in *query.CompareExpr) (out compareNode, err error) {
+func makeCompareNode(in *query.CompareExpr) (out compareNode) {
 	out.field = in.Field
 	out.gt = in.Gt
 	out.gte = in.Gte
 	out.lt = in.Lt
 	out.lte = in.Lte
-	return out, nil
+	return out
 }
 
 type compareNode struct {

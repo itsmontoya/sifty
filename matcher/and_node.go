@@ -2,14 +2,9 @@ package matcher
 
 import "github.com/itsmontoya/sifty/query"
 
-func makeAndNode(in []query.Clause) (out andNode, err error) {
+func makeAndNode(in []query.Clause) (out andNode) {
 	for _, c := range in {
-		var n node
-		if n, err = toNode(c); err != nil {
-			return out, err
-		}
-
-		out.children = append(out.children, n)
+		out.children = append(out.children, toNode(c))
 	}
 
 	return
