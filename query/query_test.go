@@ -50,6 +50,15 @@ func TestQueryValidate(t *testing.T) {
 				Filter: Clause{},
 			},
 		},
+		{
+			name: "invalid filter",
+			in: Query{
+				Filter: Clause{
+					Not: &Clause{},
+				},
+			},
+			errSubstr: "invalid filter:",
+		},
 
 		{
 			name: "invalid limit",
