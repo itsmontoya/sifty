@@ -13,7 +13,7 @@ func toNode(in query.Clause) (n node, err error) {
 	case len(in.And) > 0:
 		return makeAndNode(in.And)
 	case len(in.Or) > 0:
-		return makeAndNode(in.Or)
+		return makeOrNode(in.Or)
 	case in.Not != nil:
 		return makeNotNode(in.Not)
 	case in.Contains != nil:
