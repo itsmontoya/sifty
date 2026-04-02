@@ -100,3 +100,86 @@ func TestClauseValidate(t *testing.T) {
 		})
 	}
 }
+
+func TestClause_IsZero(t *testing.T) {
+	tests := []struct {
+		name string
+		c    Clause
+		want bool
+	}{
+		{
+			name: "empty clause is zero",
+			c:    Clause{},
+			want: true,
+		},
+		{
+			name: "and set is non-zero",
+			c: Clause{
+				And: []Clause{
+					{
+						Compare: &CompareExpr{
+							Field: "status",
+							Eq:    "active",
+						},
+					},
+				},
+			},
+			want: false,
+		},
+		{
+			name: "or set is non-zero",
+			c: Clause{
+				Or: []Clause{
+					{
+						Compare: &CompareExpr{
+							Field: "status",
+							Eq:    "active",
+						},
+					},
+				},
+			},
+			want: false,
+		},
+		{
+			name: "contains set is non-zero",
+			c: Clause{
+				Contains: &ContainsExpr{
+					Field: "title",
+					Value: "go",
+				},
+			},
+			want: false,
+		},
+		{
+			name: "compare set is non-zero",
+			c: Clause{
+				Compare: &CompareExpr{
+					Field: "status",
+					Eq:    "active",
+				},
+			},
+			want: false,
+		},
+		{
+			name: "not with non-zero child is non-zero",
+			c: Clause{
+				Not: &Clause{
+					Compare: &CompareExpr{
+						Field: "status",
+						Eq:    "active",
+					},
+				},
+			},
+			want: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := tt.c.IsZero()
+			if got != tt.want {
+				t.Errorf("IsZero() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
