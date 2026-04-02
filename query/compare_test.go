@@ -2,30 +2,31 @@ package query
 
 import "testing"
 
-func TestTermExprValidate(t *testing.T) {
+func TestCompareExprValidate(t *testing.T) {
 	tt := []struct {
 		name    string
-		in      TermExpr
+		in      CompareExpr
 		wantErr bool
 	}{
 		{
-			name: "valid",
-			in: TermExpr{
-				Field: "status",
-				Value: "active",
+			name: "valid with gte and lt",
+			in: CompareExpr{
+				Field: "score",
+				Gte:   10,
+				Lt:    100,
 			},
 		},
 		{
 			name: "missing field",
-			in: TermExpr{
-				Value: "active",
+			in: CompareExpr{
+				Gte: 10,
 			},
 			wantErr: true,
 		},
 		{
-			name: "missing value",
-			in: TermExpr{
-				Field: "status",
+			name: "missing bounds",
+			in: CompareExpr{
+				Field: "score",
 			},
 			wantErr: true,
 		},

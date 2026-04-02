@@ -20,16 +20,16 @@ func TestQueryValidate(t *testing.T) {
 		{
 			name: "valid",
 			in: Query{
-				Filter: &Clause{
+				Filter: Clause{
 					And: []Clause{
 						{
-							Term: &TermExpr{
+							Compare: &CompareExpr{
 								Field: "status",
-								Value: "active",
+								Eq:    "active",
 							},
 						},
 						{
-							Range: &RangeExpr{
+							Compare: &CompareExpr{
 								Field: "score",
 								Gte:   10,
 								Lt:    100,
@@ -45,6 +45,22 @@ func TestQueryValidate(t *testing.T) {
 			},
 		},
 		{
+			name: "empty filter",
+			in: Query{
+				Filter: Clause{},
+			},
+		},
+		{
+			name: "invalid filter",
+			in: Query{
+				Filter: Clause{
+					Not: &Clause{},
+				},
+			},
+			errSubstr: "invalid filter:",
+		},
+
+		{
 			name: "invalid limit",
 			in: Query{
 				Limit: &invalidLimit,
@@ -57,13 +73,6 @@ func TestQueryValidate(t *testing.T) {
 				Offset: -1,
 			},
 			errSubstr: "offset must be >= 0",
-		},
-		{
-			name: "invalid filter",
-			in: Query{
-				Filter: &Clause{},
-			},
-			errSubstr: "invalid filter:",
 		},
 		{
 			name: "invalid sort",
@@ -105,7 +114,7 @@ func TestQueryJSONUnmarshal(t *testing.T) {
 			in: []byte(`{
 		"filter": {
 			"or": [
-				{"term": {"field": "status", "value": "active"}},
+				{"compare": {"field": "status", "eq": "active"}},
 				{"contains": {"field": "title", "value": "golang"}}
 			]
 		},

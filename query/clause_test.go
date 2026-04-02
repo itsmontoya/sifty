@@ -14,9 +14,9 @@ func TestClauseValidate(t *testing.T) {
 		{
 			name: "invalid multiple operators",
 			in: Clause{
-				Term: &TermExpr{
+				Compare: &CompareExpr{
 					Field: "status",
-					Value: "active",
+					Eq:    "active",
 				},
 				Contains: &ContainsExpr{
 					Field: "title",
@@ -26,15 +26,15 @@ func TestClauseValidate(t *testing.T) {
 			errSubstr: "clause must define exactly one operator",
 		},
 		{
-			name: "invalid no operator",
-			in:   Clause{},
+			name:      "invalid no operator",
+			in:        Clause{},
 			errSubstr: "clause must define exactly one operator",
 		},
 		{
 			name: "invalid and subclause",
 			in: Clause{
 				And: []Clause{
-					{Term: &TermExpr{Field: "status", Value: "active"}},
+					{Compare: &CompareExpr{Field: "status", Eq: "active"}},
 					{},
 				},
 			},
@@ -44,7 +44,7 @@ func TestClauseValidate(t *testing.T) {
 			name: "invalid or subclause",
 			in: Clause{
 				Or: []Clause{
-					{Term: &TermExpr{Field: "status", Value: "active"}},
+					{Compare: &CompareExpr{Field: "status", Eq: "active"}},
 					{},
 				},
 			},
@@ -61,16 +61,9 @@ func TestClauseValidate(t *testing.T) {
 			name: "valid not",
 			in: Clause{
 				Not: &Clause{
-					Term: &TermExpr{Field: "status", Value: "active"},
+					Compare: &CompareExpr{Field: "status", Eq: "active"},
 				},
 			},
-		},
-		{
-			name: "invalid term expr",
-			in: Clause{
-				Term: &TermExpr{},
-			},
-			errSubstr: "term.field is required",
 		},
 		{
 			name: "invalid contains expr",
@@ -80,11 +73,11 @@ func TestClauseValidate(t *testing.T) {
 			errSubstr: "contains.field is required",
 		},
 		{
-			name: "invalid range expr",
+			name: "invalid compare expr",
 			in: Clause{
-				Range: &RangeExpr{},
+				Compare: &CompareExpr{},
 			},
-			errSubstr: "range.field is required",
+			errSubstr: "compare.field is required",
 		},
 	}
 
@@ -103,6 +96,89 @@ func TestClauseValidate(t *testing.T) {
 
 			if tc.errSubstr != "" && !strings.Contains(err.Error(), tc.errSubstr) {
 				t.Fatalf("unexpected error: %v", err)
+			}
+		})
+	}
+}
+
+func TestClause_IsZero(t *testing.T) {
+	tests := []struct {
+		name string
+		c    Clause
+		want bool
+	}{
+		{
+			name: "empty clause is zero",
+			c:    Clause{},
+			want: true,
+		},
+		{
+			name: "and set is non-zero",
+			c: Clause{
+				And: []Clause{
+					{
+						Compare: &CompareExpr{
+							Field: "status",
+							Eq:    "active",
+						},
+					},
+				},
+			},
+			want: false,
+		},
+		{
+			name: "or set is non-zero",
+			c: Clause{
+				Or: []Clause{
+					{
+						Compare: &CompareExpr{
+							Field: "status",
+							Eq:    "active",
+						},
+					},
+				},
+			},
+			want: false,
+		},
+		{
+			name: "contains set is non-zero",
+			c: Clause{
+				Contains: &ContainsExpr{
+					Field: "title",
+					Value: "go",
+				},
+			},
+			want: false,
+		},
+		{
+			name: "compare set is non-zero",
+			c: Clause{
+				Compare: &CompareExpr{
+					Field: "status",
+					Eq:    "active",
+				},
+			},
+			want: false,
+		},
+		{
+			name: "not with non-zero child is non-zero",
+			c: Clause{
+				Not: &Clause{
+					Compare: &CompareExpr{
+						Field: "status",
+						Eq:    "active",
+					},
+				},
+			},
+			want: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := tt.c.IsZero()
+			if got != tt.want {
+				t.Errorf("IsZero() = %v, want %v", got, tt.want)
 			}
 		})
 	}
