@@ -80,7 +80,7 @@ func (c Clause) IsZero() bool {
 		return false
 	case len(c.Or) > 0:
 		return false
-	case c.Not != nil && !c.Not.IsZero():
+	case c.Not != nil:
 		return false
 	case c.Contains != nil:
 		return false
