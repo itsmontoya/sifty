@@ -1,6 +1,9 @@
 package query
 
-import "fmt"
+import (
+	"errors"
+	"fmt"
+)
 
 type Clause struct {
 	And []Clause `json:"and,omitempty"`
@@ -11,67 +14,18 @@ type Clause struct {
 	Compare  *CompareExpr  `json:"compare,omitempty"`
 }
 
-func (c Clause) Validate() error {
-	var set int
-	if len(c.And) > 0 {
-		set++
-	}
-
-	if len(c.Or) > 0 {
-		set++
-	}
-
-	if c.Not != nil {
-		set++
-	}
-
-	if c.Contains != nil {
-		set++
-	}
-
-	if c.Compare != nil {
-		set++
-	}
-
-	if set != 1 {
+func (c Clause) Validate() (err error) {
+	if c.countOperators() != 1 {
 		return fmt.Errorf("clause must define exactly one operator")
 	}
 
-	if len(c.And) > 0 {
-		for i, sub := range c.And {
-			if err := sub.Validate(); err != nil {
-				return fmt.Errorf("invalid and clause at index %d: %w", i, err)
-			}
-		}
-	}
-
-	if len(c.Or) > 0 {
-		for i, sub := range c.Or {
-			if err := sub.Validate(); err != nil {
-				return fmt.Errorf("invalid or clause at index %d: %w", i, err)
-			}
-		}
-	}
-
-	if c.Not != nil {
-		if err := c.Not.Validate(); err != nil {
-			return fmt.Errorf("invalid not clause: %w", err)
-		}
-	}
-
-	if c.Contains != nil {
-		if err := c.Contains.Validate(); err != nil {
-			return err
-		}
-	}
-
-	if c.Compare != nil {
-		if err := c.Compare.Validate(); err != nil {
-			return err
-		}
-	}
-
-	return nil
+	var errs []error
+	errs = append(errs, c.validateAnd())
+	errs = append(errs, c.validateOr())
+	errs = append(errs, c.validateNot())
+	errs = append(errs, c.validateContains())
+	errs = append(errs, c.validateCompare())
+	return errors.Join(errs...)
 }
 
 func (c Clause) IsZero() bool {
@@ -89,4 +43,94 @@ func (c Clause) IsZero() bool {
 	default:
 		return true
 	}
+}
+
+func (c Clause) countOperators() (n int) {
+	if len(c.And) > 0 {
+		n++
+	}
+
+	if len(c.Or) > 0 {
+		n++
+	}
+
+	if c.Not != nil {
+		n++
+	}
+
+	if c.Contains != nil {
+		n++
+	}
+
+	if c.Compare != nil {
+		n++
+	}
+
+	return n
+}
+
+func (c Clause) validateAnd() (err error) {
+	if len(c.And) == 0 {
+		return nil
+	}
+
+	var errs []error
+	for i, sub := range c.And {
+		if err = sub.Validate(); err != nil {
+			errs = append(errs, fmt.Errorf("invalid AND clause at index %d: %w", i, err))
+		}
+	}
+
+	return errors.Join(errs...)
+}
+
+func (c Clause) validateOr() (err error) {
+	if len(c.Or) == 0 {
+		return nil
+	}
+
+	var errs []error
+	for i, sub := range c.Or {
+		if err = sub.Validate(); err != nil {
+			errs = append(errs, fmt.Errorf("invalid OR clause at index %d: %w", i, err))
+		}
+	}
+
+	return errors.Join(errs...)
+}
+
+func (c Clause) validateNot() (err error) {
+	if c.Not == nil {
+		return nil
+	}
+
+	if err = c.Not.Validate(); err != nil {
+		return fmt.Errorf("invalid NOT clause: %w", err)
+	}
+
+	return nil
+}
+
+func (c Clause) validateContains() (err error) {
+	if c.Contains == nil {
+		return nil
+	}
+
+	if err = c.Contains.Validate(); err != nil {
+		return fmt.Errorf("invalid CONTAINS expression: %w", err)
+	}
+
+	return nil
+}
+
+func (c Clause) validateCompare() (err error) {
+	if c.Compare == nil {
+		return nil
+	}
+
+	if err = c.Compare.Validate(); err != nil {
+		return fmt.Errorf("invalid COMPARE clause: %w", err)
+	}
+
+	return nil
 }
