@@ -43,19 +43,19 @@ func TestCompareNodeEval(t *testing.T) {
 			name:   "gte branch evaluates",
 			node:   compareNode{field: "score", gte: 10},
 			doc:    testDocView{values: map[string]any{"score": 11}},
-			wantOK: false,
+			wantOK: true,
 		},
 		{
 			name:   "lt branch evaluates",
 			node:   compareNode{field: "score", lt: 10},
 			doc:    testDocView{values: map[string]any{"score": 9}},
-			wantOK: false,
+			wantOK: true,
 		},
 		{
 			name:   "lte branch evaluates",
 			node:   compareNode{field: "score", lte: 10},
 			doc:    testDocView{values: map[string]any{"score": 10}},
-			wantOK: false,
+			wantOK: true,
 		},
 		{
 			name:   "no compare operator configured",
