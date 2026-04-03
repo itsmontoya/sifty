@@ -38,7 +38,7 @@ func TestClauseValidate(t *testing.T) {
 					{},
 				},
 			},
-			errSubstr: "invalid and clause at index 1:",
+			errSubstr: "invalid AND clause at index 1:",
 		},
 		{
 			name: "invalid or subclause",
@@ -48,14 +48,14 @@ func TestClauseValidate(t *testing.T) {
 					{},
 				},
 			},
-			errSubstr: "invalid or clause at index 1:",
+			errSubstr: "invalid OR clause at index 1:",
 		},
 		{
 			name: "invalid not subclause",
 			in: Clause{
 				Not: &Clause{},
 			},
-			errSubstr: "invalid not clause:",
+			errSubstr: "invalid NOT clause:",
 		},
 		{
 			name: "valid not",
