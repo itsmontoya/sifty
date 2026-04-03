@@ -2,6 +2,7 @@ package matcher
 
 import (
 	"encoding/json"
+	"fmt"
 	"strings"
 )
 
@@ -10,7 +11,7 @@ var _ DocView = &JSONDocView{}
 func NewJSONDocView(bs []byte) (out *JSONDocView, err error) {
 	var j JSONDocView
 	if err = json.Unmarshal(bs, &j.m); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error unmarshaling bytes as a JSON object: %w", err)
 	}
 
 	return &j, nil
