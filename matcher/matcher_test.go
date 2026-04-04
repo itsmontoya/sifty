@@ -394,3 +394,210 @@ func TestMatcherIsMatch(t *testing.T) {
 		})
 	}
 }
+
+func BenchmarkCompile(b *testing.B) {
+	b.Run("contains", func(b *testing.B) {
+		var in = query.Query{
+			Filter: query.Clause{
+				Contains: &query.ContainsExpr{
+					Field: "title",
+					Value: "go",
+				},
+			},
+		}
+
+		b.ReportAllocs()
+		b.ResetTimer()
+
+		for i := 0; i < b.N; i++ {
+			var (
+				out *Matcher
+				err error
+			)
+
+			out, err = Compile(in)
+			if err != nil {
+				b.Fatalf("Compile() error = %v", err)
+			}
+
+			if out == nil {
+				b.Fatal("Compile() returned nil matcher")
+			}
+		}
+	})
+
+	b.Run("nested_boolean", func(b *testing.B) {
+		var in = query.Query{
+			Filter: query.Clause{
+				And: []query.Clause{
+					{
+						Contains: &query.ContainsExpr{
+							Field: "title",
+							Value: "go",
+						},
+					},
+					{
+						Or: []query.Clause{
+							{
+								Compare: &query.CompareExpr{
+									Field: "score",
+									Gte:   10,
+								},
+							},
+							{
+								Contains: &query.ContainsExpr{
+									Field: "category",
+									Value: "backend",
+								},
+							},
+						},
+					},
+					{
+						Not: &query.Clause{
+							Contains: &query.ContainsExpr{
+								Field: "status",
+								Value: "draft",
+							},
+						},
+					},
+				},
+			},
+		}
+
+		b.ReportAllocs()
+		b.ResetTimer()
+
+		for i := 0; i < b.N; i++ {
+			var (
+				out *Matcher
+				err error
+			)
+
+			out, err = Compile(in)
+			if err != nil {
+				b.Fatalf("Compile() error = %v", err)
+			}
+
+			if out == nil {
+				b.Fatal("Compile() returned nil matcher")
+			}
+		}
+	})
+}
+
+func BenchmarkMatcherIsMatch(b *testing.B) {
+	b.Run("contains_match", func(b *testing.B) {
+		var (
+			in = query.Query{
+				Filter: query.Clause{
+					Contains: &query.ContainsExpr{
+						Field: "title",
+						Value: "go",
+					},
+				},
+			}
+			m   *Matcher
+			doc *JSONDocView
+			ok  bool
+			err error
+		)
+
+		m, err = Compile(in)
+		if err != nil {
+			b.Fatalf("Compile() error = %v", err)
+		}
+
+		doc, err = NewJSONDocView([]byte(`{"title":"golang matcher benchmark","score":12}`))
+		if err != nil {
+			b.Fatalf("NewJSONDocView() error = %v", err)
+		}
+
+		b.ReportAllocs()
+		b.ResetTimer()
+
+		for i := 0; i < b.N; i++ {
+			ok, err = m.IsMatch(doc)
+			if err != nil {
+				b.Fatalf("IsMatch() error = %v", err)
+			}
+
+			if !ok {
+				b.Fatal("IsMatch() = false, want true")
+			}
+		}
+	})
+
+	b.Run("nested_boolean_match", func(b *testing.B) {
+		var (
+			in = query.Query{
+				Filter: query.Clause{
+					And: []query.Clause{
+						{
+							Contains: &query.ContainsExpr{
+								Field: "title",
+								Value: "go",
+							},
+						},
+						{
+							Or: []query.Clause{
+								{
+									Compare: &query.CompareExpr{
+										Field: "score",
+										Gte:   10.0,
+									},
+								},
+								{
+									Contains: &query.ContainsExpr{
+										Field: "category",
+										Value: "backend",
+									},
+								},
+							},
+						},
+						{
+							Not: &query.Clause{
+								Contains: &query.ContainsExpr{
+									Field: "status",
+									Value: "draft",
+								},
+							},
+						},
+					},
+				},
+			}
+			m   *Matcher
+			doc *JSONDocView
+			ok  bool
+			err error
+		)
+
+		m, err = Compile(in)
+		if err != nil {
+			b.Fatalf("Compile() error = %v", err)
+		}
+
+		doc, err = NewJSONDocView([]byte(`{
+			"title":"golang matcher benchmark",
+			"score":12,
+			"category":"search",
+			"status":"published"
+		}`))
+		if err != nil {
+			b.Fatalf("NewJSONDocView() error = %v", err)
+		}
+
+		b.ReportAllocs()
+		b.ResetTimer()
+
+		for i := 0; i < b.N; i++ {
+			ok, err = m.IsMatch(doc)
+			if err != nil {
+				b.Fatalf("IsMatch() error = %v", err)
+			}
+
+			if !ok {
+				b.Fatal("IsMatch() = false, want true")
+			}
+		}
+	})
+}
