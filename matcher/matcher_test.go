@@ -314,6 +314,45 @@ func TestMatcherIsMatch(t *testing.T) {
 			wantErr: errGet,
 		},
 		{
+			name: "compare gte matches",
+			query: query.Query{
+				Filter: query.Clause{
+					Compare: &query.CompareExpr{
+						Field: "score",
+						Gte:   10,
+					},
+				},
+			},
+			doc:    testDocView{values: map[string]any{"score": 12}},
+			wantOK: true,
+		},
+		{
+			name: "compare gte no match",
+			query: query.Query{
+				Filter: query.Clause{
+					Compare: &query.CompareExpr{
+						Field: "score",
+						Gte:   10,
+					},
+				},
+			},
+			doc:    testDocView{values: map[string]any{"score": 9}},
+			wantOK: false,
+		},
+		{
+			name: "compare doc read error bubbles up",
+			query: query.Query{
+				Filter: query.Clause{
+					Compare: &query.CompareExpr{
+						Field: "score",
+						Gte:   10,
+					},
+				},
+			},
+			doc:     testDocView{errs: map[string]error{"score": errGet}},
+			wantErr: errGet,
+		},
+		{
 			name: "and short-circuits false",
 			query: query.Query{
 				Filter: query.Clause{
