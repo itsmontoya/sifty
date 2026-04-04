@@ -4,6 +4,7 @@ import "github.com/itsmontoya/sifty/query"
 
 func makeCompareNode(in *query.CompareExpr) (out compareNode) {
 	out.field = in.Field
+	out.eq = in.Eq
 	out.gt = in.Gt
 	out.gte = in.Gte
 	out.lt = in.Lt
@@ -33,11 +34,11 @@ func (n compareNode) eval(doc DocView) (ok bool, err error) {
 	case n.gt != nil:
 		return isGreaterThan(val, n.gt), nil
 	case n.gte != nil:
-		return isGreaterThanOrEqualTo(val, n.gt), nil
+		return isGreaterThanOrEqualTo(val, n.gte), nil
 	case n.lt != nil:
-		return isLessThan(val, n.gt), nil
+		return isLessThan(val, n.lt), nil
 	case n.lte != nil:
-		return isLessThanOrEqualTo(val, n.gt), nil
+		return isLessThanOrEqualTo(val, n.lte), nil
 	default:
 		return false, nil
 	}

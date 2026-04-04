@@ -8,14 +8,14 @@ import (
 
 func Compile(q query.Query) (out *Matcher, err error) {
 	if err = q.Validate(); err != nil {
-		fmt.Println("Oh it happens here")
-		return
+		err = fmt.Errorf("cannot compile, invalid query: %w", err)
+		return nil, err
 	}
 
 	var m Matcher
 	if q.Filter.IsZero() {
 		m.root = makeAnyNode()
-		return &m, err
+		return &m, nil
 	}
 
 	m.root = toNode(q.Filter)
