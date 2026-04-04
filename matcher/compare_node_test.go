@@ -46,16 +46,46 @@ func TestCompareNodeEval(t *testing.T) {
 			wantOK: true,
 		},
 		{
+			name:   "gte matches at equality bound",
+			node:   compareNode{field: "score", gte: 10},
+			doc:    testDocView{values: map[string]any{"score": 10}},
+			wantOK: true,
+		},
+		{
+			name:   "gte no match below bound",
+			node:   compareNode{field: "score", gte: 10},
+			doc:    testDocView{values: map[string]any{"score": 9}},
+			wantOK: false,
+		},
+		{
 			name:   "lt branch evaluates",
 			node:   compareNode{field: "score", lt: 10},
 			doc:    testDocView{values: map[string]any{"score": 9}},
 			wantOK: true,
 		},
 		{
+			name:   "lt no match at equality bound",
+			node:   compareNode{field: "score", lt: 10},
+			doc:    testDocView{values: map[string]any{"score": 10}},
+			wantOK: false,
+		},
+		{
 			name:   "lte branch evaluates",
 			node:   compareNode{field: "score", lte: 10},
 			doc:    testDocView{values: map[string]any{"score": 10}},
 			wantOK: true,
+		},
+		{
+			name:   "lte no match above bound",
+			node:   compareNode{field: "score", lte: 10},
+			doc:    testDocView{values: map[string]any{"score": 11}},
+			wantOK: false,
+		},
+		{
+			name:   "gt no match at equality bound",
+			node:   compareNode{field: "score", gt: 10},
+			doc:    testDocView{values: map[string]any{"score": 10}},
+			wantOK: false,
 		},
 		{
 			name:   "no compare operator configured",
