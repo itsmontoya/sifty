@@ -2,7 +2,7 @@ package sifty
 
 import "time"
 
-type Entry struct {
+type Row struct {
 	Timestamp time.Time `json:"timestamp"`
 	Value     any       `json:"value"`
 }
