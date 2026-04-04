@@ -6,6 +6,8 @@ import (
 	"github.com/itsmontoya/sifty/query"
 )
 
+// Compile validates a query and compiles its filter into an executable Matcher.
+// A zero-value filter compiles to a matcher that matches all documents.
 func Compile(q query.Query) (out *Matcher, err error) {
 	if err = q.Validate(); err != nil {
 		err = fmt.Errorf("cannot compile, invalid query: %w", err)
@@ -22,10 +24,13 @@ func Compile(q query.Query) (out *Matcher, err error) {
 	return &m, nil
 }
 
+// Matcher evaluates compiled query filters against a DocView input.
 type Matcher struct {
 	root node
 }
 
+// IsMatch evaluates the compiled filter against in.
+// It returns any error emitted by the underlying DocView.
 func (m *Matcher) IsMatch(in DocView) (ok bool, err error) {
 	return m.root.eval(in)
 }
