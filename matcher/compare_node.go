@@ -1,6 +1,9 @@
 package matcher
 
-import "github.com/itsmontoya/sifty/query"
+import (
+	"github.com/itsmontoya/sifty/docview"
+	"github.com/itsmontoya/sifty/query"
+)
 
 func makeCompareNode(in *query.CompareExpr) (out compareNode) {
 	out.field = in.Field
@@ -22,7 +25,7 @@ type compareNode struct {
 	lte any
 }
 
-func (n compareNode) eval(doc DocView) (ok bool, err error) {
+func (n compareNode) eval(doc docview.DocView) (ok bool, err error) {
 	var val any
 	if val, ok, err = doc.Get(n.field); !ok || err != nil {
 		return ok, err

@@ -3,6 +3,7 @@ package matcher
 import (
 	"strings"
 
+	"github.com/itsmontoya/sifty/docview"
 	"github.com/itsmontoya/sifty/query"
 )
 
@@ -17,7 +18,7 @@ type containsNode struct {
 	value string
 }
 
-func (n containsNode) eval(doc DocView) (ok bool, err error) {
+func (n containsNode) eval(doc docview.DocView) (ok bool, err error) {
 	var val any
 	if val, ok, err = doc.Get(n.field); !ok || err != nil {
 		return false, err

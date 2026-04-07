@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/itsmontoya/sifty/docview/jsondoc"
 	"github.com/itsmontoya/sifty/query"
 )
 
@@ -536,7 +537,7 @@ func BenchmarkMatcherIsMatch(b *testing.B) {
 				},
 			}
 			m   *Matcher
-			doc *JSONDocView
+			doc *jsondoc.JSONDoc
 			ok  bool
 			err error
 		)
@@ -546,7 +547,7 @@ func BenchmarkMatcherIsMatch(b *testing.B) {
 			b.Fatalf("Compile() error = %v", err)
 		}
 
-		doc, err = NewJSONDocView([]byte(`{"title":"golang matcher benchmark","score":12}`))
+		doc, err = jsondoc.NewJSONDoc([]byte(`{"title":"golang matcher benchmark","score":12}`))
 		if err != nil {
 			b.Fatalf("NewJSONDocView() error = %v", err)
 		}
@@ -605,7 +606,7 @@ func BenchmarkMatcherIsMatch(b *testing.B) {
 				},
 			}
 			m   *Matcher
-			doc *JSONDocView
+			doc *jsondoc.JSONDoc
 			ok  bool
 			err error
 		)
@@ -615,7 +616,7 @@ func BenchmarkMatcherIsMatch(b *testing.B) {
 			b.Fatalf("Compile() error = %v", err)
 		}
 
-		doc, err = NewJSONDocView([]byte(`{
+		doc, err = jsondoc.NewJSONDoc([]byte(`{
 			"title":"golang matcher benchmark",
 			"score":12,
 			"category":"search",

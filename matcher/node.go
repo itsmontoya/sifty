@@ -1,6 +1,7 @@
 package matcher
 
 import (
+	"github.com/itsmontoya/sifty/docview"
 	"github.com/itsmontoya/sifty/query"
 )
 
@@ -22,5 +23,5 @@ func toNode(in query.Clause) (n node) {
 }
 
 type node interface {
-	eval(doc DocView) (bool, error)
+	eval(doc docview.DocView) (bool, error)
 }

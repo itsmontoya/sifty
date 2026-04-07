@@ -1,11 +1,11 @@
-package matcher
+package jsondoc
 
 import (
 	"errors"
 	"testing"
 )
 
-func TestNewJSONDocView(t *testing.T) {
+func TestNewJSONDoc(t *testing.T) {
 	tt := []struct {
 		name    string
 		in      []byte
@@ -25,11 +25,11 @@ func TestNewJSONDocView(t *testing.T) {
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			var (
-				out *JSONDocView
+				out *JSONDoc
 				err error
 			)
 
-			out, err = NewJSONDocView(tc.in)
+			out, err = NewJSONDoc(tc.in)
 			if tc.wantErr && err == nil {
 				t.Fatal("expected error")
 			}
@@ -39,22 +39,22 @@ func TestNewJSONDocView(t *testing.T) {
 			}
 
 			if !tc.wantErr && out == nil {
-				t.Fatal("expected JSONDocView")
+				t.Fatal("expected JSONDoc")
 			}
 		})
 	}
 }
 
-func TestJSONDocViewGet(t *testing.T) {
+func TestJSONDocGet(t *testing.T) {
 	var (
-		view *JSONDocView
+		view *JSONDoc
 		err  error
 	)
 
-	view, err = NewJSONDocView([]byte(`{
+	view, err = NewJSONDoc([]byte(`{
 		"title":"golang",
 		"meta":{"lang":"go","version":1},
-		"obj":{"inner":{"name":"sifty"}}
+		"obj":{"inner":{"name":"sifty"},"items":[{"name":"alpha"},{"name":"beta"}]}
 	}`))
 	if err != nil {
 		t.Fatalf("setup failed: %v", err)
@@ -91,6 +91,11 @@ func TestJSONDocViewGet(t *testing.T) {
 			wantOK: true,
 		},
 		{
+			name:   "get nested array",
+			path:   "obj.items",
+			wantOK: true,
+		},
+		{
 			name:   "missing root key",
 			path:   "missing",
 			wantOK: false,
@@ -104,6 +109,12 @@ func TestJSONDocViewGet(t *testing.T) {
 			name:   "non-object encountered before last path segment",
 			path:   "title.value",
 			wantOK: false,
+		},
+		{
+			name:   "array index bracket path",
+			path:   "obj.items[0].name",
+			want:   "alpha",
+			wantOK: true,
 		},
 	}
 
@@ -139,7 +150,7 @@ func TestJSONDocViewGet(t *testing.T) {
 	}
 }
 
-func BenchmarkNewJSONDocView(b *testing.B) {
+func BenchmarkNewJSONDoc(b *testing.B) {
 	b.Run("flat_object", func(b *testing.B) {
 		var in = []byte(`{"title":"golang matcher benchmark","score":12}`)
 
@@ -148,36 +159,36 @@ func BenchmarkNewJSONDocView(b *testing.B) {
 
 		for i := 0; i < b.N; i++ {
 			var (
-				out *JSONDocView
+				out *JSONDoc
 				err error
 			)
 
-			out, err = NewJSONDocView(in)
+			out, err = NewJSONDoc(in)
 			if err != nil {
-				b.Fatalf("NewJSONDocView() error = %v", err)
+				b.Fatalf("NewJSONDoc() error = %v", err)
 			}
 
 			if out == nil {
-				b.Fatal("NewJSONDocView() returned nil view")
+				b.Fatal("NewJSONDoc() returned nil view")
 			}
 		}
 	})
 }
 
-func BenchmarkJSONDocViewGet(b *testing.B) {
+func BenchmarkJSONDocGet(b *testing.B) {
 	var (
-		view *JSONDocView
+		view *JSONDoc
 		err  error
 	)
 
-	view, err = NewJSONDocView([]byte(`{
+	view, err = NewJSONDoc([]byte(`{
 		"a":"v1",
 		"lvl1":{"b":"v2"},
 		"lvl1b":{"lvl2":{"c":"v3"}},
 		"lvl1c":{"lvl2":{"lvl3":{"d":"v4"}}}
 	}`))
 	if err != nil {
-		b.Fatalf("NewJSONDocView() error = %v", err)
+		b.Fatalf("NewJSONDoc() error = %v", err)
 	}
 
 	tt := []struct {

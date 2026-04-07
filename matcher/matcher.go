@@ -3,6 +3,7 @@ package matcher
 import (
 	"fmt"
 
+	"github.com/itsmontoya/sifty/docview"
 	"github.com/itsmontoya/sifty/query"
 )
 
@@ -31,6 +32,6 @@ type Matcher struct {
 
 // IsMatch evaluates the compiled filter against in.
 // It returns any error emitted by the underlying DocView.
-func (m *Matcher) IsMatch(in DocView) (ok bool, err error) {
+func (m *Matcher) IsMatch(in docview.DocView) (ok bool, err error) {
 	return m.root.eval(in)
 }

@@ -1,4 +1,4 @@
-package matcher
+package docview
 
 // DocView provides field-path access for matcher evaluation.
 // Implementations should return (nil, false, nil) when the path is missing.
