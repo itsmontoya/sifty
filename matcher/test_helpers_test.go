@@ -1,5 +1,7 @@
 package matcher
 
+import "github.com/itsmontoya/sifty/docview"
+
 type testDocView struct {
 	values map[string]any
 	errs   map[string]error
@@ -23,6 +25,6 @@ type testNode struct {
 	err error
 }
 
-func (n testNode) eval(doc DocView) (ok bool, err error) {
+func (n testNode) eval(doc docview.DocView) (ok bool, err error) {
 	return n.ok, n.err
 }

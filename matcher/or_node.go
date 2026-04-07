@@ -1,6 +1,9 @@
 package matcher
 
-import "github.com/itsmontoya/sifty/query"
+import (
+	"github.com/itsmontoya/sifty/docview"
+	"github.com/itsmontoya/sifty/query"
+)
 
 func makeOrNode(in []query.Clause) (out orNode) {
 	for _, c := range in {
@@ -14,7 +17,7 @@ type orNode struct {
 	children []node
 }
 
-func (n orNode) eval(doc DocView) (ok bool, err error) {
+func (n orNode) eval(doc docview.DocView) (ok bool, err error) {
 	for _, child := range n.children {
 		ok, err = child.eval(doc)
 		switch {
