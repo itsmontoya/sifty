@@ -1,0 +1,240 @@
+package sifty_test
+
+import (
+	"encoding/json"
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+	"time"
+
+	"github.com/itsmontoya/sifty"
+	"github.com/itsmontoya/sifty/query"
+)
+
+type testEntry struct {
+	Foo int    `json:"foo"`
+	Bar int    `json:"bar"`
+	Tag string `json:"tag"`
+}
+
+type scannedRow struct {
+	Timestamp time.Time `json:"timestamp"`
+	Value     testEntry `json:"value"`
+}
+
+func TestNewWithInvalidPath(t *testing.T) {
+	t.Parallel()
+
+	dir := t.TempDir()
+	filePath := filepath.Join(dir, "db-file")
+	if err := os.WriteFile(filePath, []byte("x"), 0600); err != nil {
+		t.Fatalf("unexpected write error: %v", err)
+	}
+
+	s, err := sifty.New(filePath, 10)
+	if s != nil {
+		t.Fatalf("sifty instance = %#v, expected nil", s)
+	}
+
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestRowJSONMarshaling(t *testing.T) {
+	t.Parallel()
+
+	in := sifty.Row{
+		Timestamp: time.Date(2026, time.April, 4, 12, 0, 0, 0, time.UTC),
+		Value: testEntry{
+			Foo: 1,
+			Bar: 2,
+			Tag: "alpha",
+		},
+	}
+
+	bs, err := json.Marshal(in)
+	if err != nil {
+		t.Fatalf("unexpected marshal error: %v", err)
+	}
+
+	var out map[string]json.RawMessage
+	if err = json.Unmarshal(bs, &out); err != nil {
+		t.Fatalf("unexpected unmarshal error: %v", err)
+	}
+
+	if _, ok := out["timestamp"]; !ok {
+		t.Fatal("missing timestamp field")
+	}
+
+	if _, ok := out["value"]; !ok {
+		t.Fatal("missing value field")
+	}
+}
+
+func TestSiftyAppendAndScan(t *testing.T) {
+	t.Parallel()
+
+	dir := t.TempDir()
+	s, err := sifty.New(dir, 10)
+	if err != nil {
+		t.Fatalf("unexpected new error: %v", err)
+	}
+
+	entries := []testEntry{
+		{Foo: 1, Bar: 10, Tag: "alpha"},
+		{Foo: 2, Bar: 20, Tag: "beta"},
+		{Foo: 3, Bar: 30, Tag: "alpha"},
+	}
+
+	for _, entry := range entries {
+		if err = s.Append(entry); err != nil {
+			t.Fatalf("unexpected append error: %v", err)
+		}
+	}
+
+	matches, err := s.Scan(query.Query{Filter: query.Clause{Contains: &query.ContainsExpr{Field: "value.tag", Value: "alpha"}}}, 10)
+	if err != nil {
+		t.Fatalf("unexpected scan error: %v", err)
+	}
+
+	if got, want := len(matches), 2; got != want {
+		t.Fatalf("match count = %d, want %d", got, want)
+	}
+
+	rows := decodeScannedRows(t, matches)
+	for i, row := range rows {
+		if row.Timestamp.IsZero() {
+			t.Fatalf("row[%d] timestamp is zero", i)
+		}
+	}
+
+	if got, want := rows[0].Value.Foo, 1; got != want {
+		t.Fatalf("rows[0].value.foo = %d, want %d", got, want)
+	}
+
+	if got, want := rows[1].Value.Foo, 3; got != want {
+		t.Fatalf("rows[1].value.foo = %d, want %d", got, want)
+	}
+}
+
+func TestSiftyScanLimit(t *testing.T) {
+	t.Parallel()
+
+	dir := t.TempDir()
+	s, err := sifty.New(dir, 10)
+	if err != nil {
+		t.Fatalf("unexpected new error: %v", err)
+	}
+
+	for i := 0; i < 3; i++ {
+		if err = s.Append(testEntry{Foo: i, Tag: "x"}); err != nil {
+			t.Fatalf("unexpected append error: %v", err)
+		}
+	}
+
+	matches, err := s.Scan(query.Query{}, 2)
+	if err != nil {
+		t.Fatalf("unexpected scan error: %v", err)
+	}
+
+	if got, want := len(matches), 2; got != want {
+		t.Fatalf("match count = %d, want %d", got, want)
+	}
+}
+
+func TestSiftyScanInvalidQuery(t *testing.T) {
+	t.Parallel()
+
+	dir := t.TempDir()
+	s, err := sifty.New(dir, 10)
+	if err != nil {
+		t.Fatalf("unexpected new error: %v", err)
+	}
+
+	_, err = s.Scan(query.Query{Filter: query.Clause{Compare: &query.CompareExpr{Field: "value.foo"}}}, 10)
+	if err == nil {
+		t.Fatal("expected query validation error")
+	}
+
+	if !strings.Contains(err.Error(), "cannot compile, invalid query") {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestSiftyLoadsExistingFile(t *testing.T) {
+	t.Parallel()
+
+	dir := t.TempDir()
+
+	first, err := sifty.New(dir, 10)
+	if err != nil {
+		t.Fatalf("unexpected new error: %v", err)
+	}
+
+	seed := []testEntry{
+		{Foo: 10, Bar: 100, Tag: "seed"},
+		{Foo: 11, Bar: 110, Tag: "seed"},
+	}
+
+	for _, entry := range seed {
+		if err = first.Append(entry); err != nil {
+			t.Fatalf("unexpected append error on first instance: %v", err)
+		}
+	}
+
+	second, err := sifty.New(dir, 10)
+	if err != nil {
+		t.Fatalf("unexpected new error on reopen: %v", err)
+	}
+
+	matches, err := second.Scan(
+		query.Query{
+			Filter: query.Clause{
+				Contains: &query.ContainsExpr{
+					Field: "value.tag",
+					Value: "seed",
+				},
+			},
+		},
+		10,
+	)
+	if err != nil {
+		t.Fatalf("unexpected scan error on reopened instance: %v", err)
+	}
+
+	if got, want := len(matches), len(seed); got != want {
+		t.Fatalf("match count on reopened instance = %d, want %d", got, want)
+	}
+
+	rows := decodeScannedRows(t, matches)
+	if got, want := rows[0].Value.Foo, seed[0].Foo; got != want {
+		t.Fatalf("rows[0].value.foo = %d, want %d", got, want)
+	}
+
+	if got, want := rows[1].Value.Foo, seed[1].Foo; got != want {
+		t.Fatalf("rows[1].value.foo = %d, want %d", got, want)
+	}
+}
+
+func decodeScannedRows(t *testing.T, matches []any) (rows []scannedRow) {
+	t.Helper()
+
+	rows = make([]scannedRow, 0, len(matches))
+	for i, match := range matches {
+		raw, ok := match.(json.RawMessage)
+		if !ok {
+			t.Fatalf("matches[%d] type = %T, want json.RawMessage", i, match)
+		}
+
+		var row scannedRow
+		if err := json.Unmarshal(raw, &row); err != nil {
+			t.Fatalf("unexpected row unmarshal error at index %d: %v", i, err)
+		}
+
+		rows = append(rows, row)
+	}
+
+	return rows
+}
