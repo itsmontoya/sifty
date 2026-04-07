@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"io"
 
+	"github.com/itsmontoya/sifty/docview"
+	"github.com/itsmontoya/sifty/docview/jsondoc"
 	"github.com/itsmontoya/sifty/matcher"
 )
 
@@ -25,8 +27,8 @@ func (s *scanner) process(r io.Reader) (err error) {
 }
 
 func (s *scanner) processRow(raw json.RawMessage) (err error) {
-	var view matcher.DocView
-	if view, err = matcher.NewJSONDocView(raw); err != nil {
+	var view docview.DocView
+	if view, err = jsondoc.NewJSONDoc(raw); err != nil {
 		return err
 	}
 
