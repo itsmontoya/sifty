@@ -18,11 +18,6 @@ type testEntry struct {
 	Tag string `json:"tag"`
 }
 
-type scannedRow struct {
-	Timestamp time.Time `json:"timestamp"`
-	Value     testEntry `json:"value"`
-}
-
 func TestNewWithInvalidPath(t *testing.T) {
 	t.Parallel()
 
@@ -94,7 +89,7 @@ func TestSiftyAppendAndScan(t *testing.T) {
 		}
 	}
 
-	matches, err := s.Scan(query.Query{Filter: query.Clause{Contains: &query.ContainsExpr{Field: "value.tag", Value: "alpha"}}}, 10)
+	matches, err := s.Scan(query.Query{Filter: query.Clause{Contains: &query.ContainsExpr{Field: "tag", Value: "alpha"}}}, 10)
 	if err != nil {
 		t.Fatalf("unexpected scan error: %v", err)
 	}
@@ -103,19 +98,13 @@ func TestSiftyAppendAndScan(t *testing.T) {
 		t.Fatalf("match count = %d, want %d", got, want)
 	}
 
-	rows := decodeScannedRows(t, matches)
-	for i, row := range rows {
-		if row.Timestamp.IsZero() {
-			t.Fatalf("row[%d] timestamp is zero", i)
-		}
+	rows := decodeScannedEntries(t, matches)
+	if got, want := rows[0].Foo, 1; got != want {
+		t.Fatalf("rows[0].foo = %d, want %d", got, want)
 	}
 
-	if got, want := rows[0].Value.Foo, 1; got != want {
-		t.Fatalf("rows[0].value.foo = %d, want %d", got, want)
-	}
-
-	if got, want := rows[1].Value.Foo, 3; got != want {
-		t.Fatalf("rows[1].value.foo = %d, want %d", got, want)
+	if got, want := rows[1].Foo, 3; got != want {
+		t.Fatalf("rows[1].foo = %d, want %d", got, want)
 	}
 }
 
@@ -153,7 +142,7 @@ func TestSiftyScanInvalidQuery(t *testing.T) {
 		t.Fatalf("unexpected new error: %v", err)
 	}
 
-	_, err = s.Scan(query.Query{Filter: query.Clause{Compare: &query.CompareExpr{Field: "value.foo"}}}, 10)
+	_, err = s.Scan(query.Query{Filter: query.Clause{Compare: &query.CompareExpr{Field: "foo"}}}, 10)
 	if err == nil {
 		t.Fatal("expected query validation error")
 	}
@@ -193,7 +182,7 @@ func TestSiftyLoadsExistingFile(t *testing.T) {
 		query.Query{
 			Filter: query.Clause{
 				Contains: &query.ContainsExpr{
-					Field: "value.tag",
+					Field: "tag",
 					Value: "seed",
 				},
 			},
@@ -208,32 +197,32 @@ func TestSiftyLoadsExistingFile(t *testing.T) {
 		t.Fatalf("match count on reopened instance = %d, want %d", got, want)
 	}
 
-	rows := decodeScannedRows(t, matches)
-	if got, want := rows[0].Value.Foo, seed[0].Foo; got != want {
-		t.Fatalf("rows[0].value.foo = %d, want %d", got, want)
+	rows := decodeScannedEntries(t, matches)
+	if got, want := rows[0].Foo, seed[0].Foo; got != want {
+		t.Fatalf("rows[0].foo = %d, want %d", got, want)
 	}
 
-	if got, want := rows[1].Value.Foo, seed[1].Foo; got != want {
-		t.Fatalf("rows[1].value.foo = %d, want %d", got, want)
+	if got, want := rows[1].Foo, seed[1].Foo; got != want {
+		t.Fatalf("rows[1].foo = %d, want %d", got, want)
 	}
 }
 
-func decodeScannedRows(t *testing.T, matches []any) (rows []scannedRow) {
+func decodeScannedEntries(t *testing.T, matches []any) (rows []testEntry) {
 	t.Helper()
 
-	rows = make([]scannedRow, 0, len(matches))
+	rows = make([]testEntry, 0, len(matches))
 	for i, match := range matches {
 		raw, ok := match.(json.RawMessage)
 		if !ok {
 			t.Fatalf("matches[%d] type = %T, want json.RawMessage", i, match)
 		}
 
-		var row scannedRow
-		if err := json.Unmarshal(raw, &row); err != nil {
-			t.Fatalf("unexpected row unmarshal error at index %d: %v", i, err)
+		var entry testEntry
+		if err := json.Unmarshal(raw, &entry); err != nil {
+			t.Fatalf("unexpected value unmarshal error at index %d: %v", i, err)
 		}
 
-		rows = append(rows, row)
+		rows = append(rows, entry)
 	}
 
 	return rows
