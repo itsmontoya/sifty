@@ -1,8 +1,10 @@
 package sifty
 
 import (
+	"encoding/json"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/itsmontoya/sifty/matcher"
 	"github.com/itsmontoya/sifty/query"
@@ -17,7 +19,10 @@ func TestScannerProcessRowInvalidJSON(t *testing.T) {
 	}
 
 	s := makeScanner(m, 10)
-	err = s.processRow([]byte("not-json"))
+	err = s.processRow(rawRow{
+		Timestamp: time.Now(),
+		Value:     json.RawMessage("not-json"),
+	})
 	if err == nil {
 		t.Fatal("expected invalid json error")
 	}
