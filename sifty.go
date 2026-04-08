@@ -42,6 +42,8 @@ type Sifty struct {
 	db *iodb.DB
 
 	f *iodb.File
+	// Timestamp for when the current file was created
+	createdFileAt time.Time
 
 	count    int
 	maxCount int
@@ -84,8 +86,10 @@ func (s *Sifty) rotate() (err error) {
 	}
 
 	s.count = 0
-	key := fmt.Sprintf("%s.log", time.Now().Format(time.RFC3339))
+	createdAt := time.Now()
+	key := fmt.Sprintf("%s.log", createdAt.Format(time.RFC3339))
 	s.f, err = s.db.Create(key)
+	s.createdFileAt = createdAt
 	return err
 }
 
