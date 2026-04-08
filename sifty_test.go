@@ -91,7 +91,7 @@ func TestSiftyAppendAndScan(t *testing.T) {
 		}
 	}
 
-	matches, err := s.Scan(query.Query{Filter: query.Clause{Contains: &query.ContainsExpr{Field: "tag", Value: "alpha"}}}, 10)
+	matches, err := s.Scan(query.Query{Filter: query.Clause{Contains: &query.ContainsExpr{Field: "tag", Value: "alpha"}}})
 	if err != nil {
 		t.Fatalf("unexpected scan error: %v", err)
 	}
@@ -110,7 +110,7 @@ func TestSiftyAppendAndScan(t *testing.T) {
 	}
 }
 
-func TestSiftyScanLimit(t *testing.T) {
+func TestSiftyScanNoLimit(t *testing.T) {
 	t.Parallel()
 
 	dir := t.TempDir()
@@ -125,16 +125,12 @@ func TestSiftyScanLimit(t *testing.T) {
 		}
 	}
 
-	matches, err := s.Scan(query.Query{}, 2)
-	if err == nil {
-		t.Fatal("expected scan limit error")
+	matches, err := s.Scan(query.Query{})
+	if err != nil {
+		t.Fatalf("unexpected scan error: %v", err)
 	}
 
-	if got, want := err.Error(), "break"; got != want {
-		t.Fatalf("scan error = %q, want %q", got, want)
-	}
-
-	if got, want := len(matches), 0; got != want {
+	if got, want := len(matches), 3; got != want {
 		t.Fatalf("match count = %d, want %d", got, want)
 	}
 }
@@ -148,7 +144,7 @@ func TestSiftyScanInvalidQuery(t *testing.T) {
 		t.Fatalf("unexpected new error: %v", err)
 	}
 
-	_, err = s.Scan(query.Query{Filter: query.Clause{Compare: &query.CompareExpr{Field: "foo"}}}, 10)
+	_, err = s.Scan(query.Query{Filter: query.Clause{Compare: &query.CompareExpr{Field: "foo"}}})
 	if err == nil {
 		t.Fatal("expected query validation error")
 	}
@@ -193,7 +189,6 @@ func TestSiftyLoadsExistingFile(t *testing.T) {
 				},
 			},
 		},
-		10,
 	)
 	if err != nil {
 		t.Fatalf("unexpected scan error on reopened instance: %v", err)
@@ -272,7 +267,6 @@ func TestSiftyScanTimeRangeIncludesOlderSegments(t *testing.T) {
 				To:   &to,
 			},
 		},
-		20,
 	)
 	if err != nil {
 		t.Fatalf("unexpected scan error: %v", err)
