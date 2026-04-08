@@ -4,6 +4,7 @@ import (
 	"errors"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/itsmontoya/sifty/docview/jsondoc"
 	"github.com/itsmontoya/sifty/query"
@@ -419,7 +420,7 @@ func TestMatcherIsMatch(t *testing.T) {
 				t.Fatalf("compile failed: %v", err)
 			}
 
-			ok, err = m.IsMatch(tc.doc)
+			ok, err = m.IsMatch(time.Now(), tc.doc)
 			if tc.wantErr == nil && err != nil {
 				t.Fatalf("unexpected match error: %v", err)
 			}
@@ -556,7 +557,7 @@ func BenchmarkMatcherIsMatch(b *testing.B) {
 		b.ResetTimer()
 
 		for i := 0; i < b.N; i++ {
-			ok, err = m.IsMatch(doc)
+			ok, err = m.IsMatch(time.Now(), doc)
 			if err != nil {
 				b.Fatalf("IsMatch() error = %v", err)
 			}
@@ -630,7 +631,7 @@ func BenchmarkMatcherIsMatch(b *testing.B) {
 		b.ResetTimer()
 
 		for i := 0; i < b.N; i++ {
-			ok, err = m.IsMatch(doc)
+			ok, err = m.IsMatch(time.Now(), doc)
 			if err != nil {
 				b.Fatalf("IsMatch() error = %v", err)
 			}
