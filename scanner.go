@@ -9,19 +9,16 @@ import (
 	"github.com/itsmontoya/sifty/matcher"
 )
 
-func makeScanner(m *matcher.Matcher, f *iodb.File, matches chan result, limit int) (s scanner) {
+func makeScanner(m *matcher.Matcher, f *iodb.File, matches chan result) (s scanner) {
 	s.m = m
 	s.f = f
 	s.ch = matches
-	s.limit = limit
 	return s
 }
 
 type scanner struct {
 	m *matcher.Matcher
 	f *iodb.File
-
-	limit int
 
 	ch     chan result
 	result result
@@ -51,19 +48,6 @@ func (s *scanner) processRow(row rawRow) (err error) {
 }
 
 func (s *scanner) append(value any) (err error) {
-	if s.isAtLimit() {
-		return errBreak
-	}
-
 	s.result.matches = append(s.result.matches, value)
 	return nil
-}
-
-func (s *scanner) isAtLimit() (ok bool) {
-	switch s.limit {
-	case -1:
-		return true
-	default:
-		return len(s.result.matches) >= s.limit
-	}
 }
