@@ -44,15 +44,19 @@ func (m *Matcher) IsMatch(ts time.Time, in docview.DocView) (ok bool, err error)
 	return m.root.eval(in)
 }
 
-func (m *Matcher) isInRange(ts time.Time) (ok bool) {
+func (m *Matcher) RangeBounds(ts time.Time) (compare int) {
 	switch {
 	case m.tr == nil:
-		return true
+		return 0
 	case m.tr.From != nil && m.tr.From.After(ts):
-		return false
+		return -1
 	case m.tr.To != nil && m.tr.To.Before(ts):
-		return false
+		return 1
 	default:
-		return true
+		return 0
 	}
+}
+
+func (m *Matcher) isInRange(ts time.Time) (ok bool) {
+	return m.RangeBounds(ts) == 0
 }
