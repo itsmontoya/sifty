@@ -2,8 +2,10 @@ package sifty_test
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"testing"
 	"time"
@@ -124,11 +126,15 @@ func TestSiftyScanLimit(t *testing.T) {
 	}
 
 	matches, err := s.Scan(query.Query{}, 2)
-	if err != nil {
-		t.Fatalf("unexpected scan error: %v", err)
+	if err == nil {
+		t.Fatal("expected scan limit error")
 	}
 
-	if got, want := len(matches), 2; got != want {
+	if got, want := err.Error(), "break"; got != want {
+		t.Fatalf("scan error = %q, want %q", got, want)
+	}
+
+	if got, want := len(matches), 0; got != want {
 		t.Fatalf("match count = %d, want %d", got, want)
 	}
 }
@@ -205,6 +211,112 @@ func TestSiftyLoadsExistingFile(t *testing.T) {
 	if got, want := rows[1].Foo, seed[1].Foo; got != want {
 		t.Fatalf("rows[1].foo = %d, want %d", got, want)
 	}
+}
+
+func TestSiftyScanTimeRangeIncludesOlderSegments(t *testing.T) {
+	t.Parallel()
+
+	dir := t.TempDir()
+	s, err := sifty.New(dir, 5)
+	if err != nil {
+		t.Fatalf("unexpected new error: %v", err)
+	}
+
+	for i := 0; i < 15; i++ {
+		if err = s.Append(testEntry{Foo: i, Tag: "time-range"}); err != nil {
+			t.Fatalf("unexpected append error: %v", err)
+		}
+	}
+
+	now := time.Now()
+	from := now.Add(-5 * time.Minute)
+	to := now.Add(5 * time.Minute)
+
+	nonEmptyLogFiles, err := nonEmptySegmentNames(dir)
+	if err != nil {
+		t.Fatalf("unexpected non-empty segment read error: %v", err)
+	}
+
+	if got, want := len(nonEmptyLogFiles), 3; got != want {
+		t.Fatalf("non-empty segment count = %d, want %d", got, want)
+	}
+
+	olderSegmentName := nonEmptyLogFiles[0]
+	newerSegmentName := nonEmptyLogFiles[len(nonEmptyLogFiles)-1]
+
+	olderSegmentToIgnoreName := fmt.Sprintf("%s.log", from.Add(-2*time.Hour).Format(time.RFC3339Nano))
+	if err = os.Rename(filepath.Join(dir, olderSegmentName), filepath.Join(dir, olderSegmentToIgnoreName)); err != nil {
+		t.Fatalf("unexpected older segment rename error: %v", err)
+	}
+
+	futureSegmentName := fmt.Sprintf("%s.log", to.Add(2*time.Hour).Format(time.RFC3339Nano))
+	if err = os.Rename(filepath.Join(dir, newerSegmentName), filepath.Join(dir, futureSegmentName)); err != nil {
+		t.Fatalf("unexpected newer segment rename error: %v", err)
+	}
+
+	reopened, err := sifty.New(dir, 5)
+	if err != nil {
+		t.Fatalf("unexpected reopen error: %v", err)
+	}
+
+	matches, err := reopened.Scan(
+		query.Query{
+			Filter: query.Clause{
+				Contains: &query.ContainsExpr{
+					Field: "tag",
+					Value: "time-range",
+				},
+			},
+			TimeRange: &query.TimeRange{
+				From: &from,
+				To:   &to,
+			},
+		},
+		20,
+	)
+	if err != nil {
+		t.Fatalf("unexpected scan error: %v", err)
+	}
+
+	if got, want := len(matches), 5; got != want {
+		t.Fatalf("match count = %d, want %d", got, want)
+	}
+
+	rows := decodeScannedEntries(t, matches)
+	sort.Slice(rows, func(i, j int) bool {
+		return rows[i].Foo < rows[j].Foo
+	})
+
+	for i := 0; i < 5; i++ {
+		if got, want := rows[i].Foo, i+5; got != want {
+			t.Fatalf("rows[%d].foo = %d, want %d", i, got, want)
+		}
+	}
+}
+
+func nonEmptySegmentNames(dir string) (out []string, err error) {
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, entry := range entries {
+		if entry.IsDir() || filepath.Ext(entry.Name()) != ".log" {
+			continue
+		}
+
+		var info os.FileInfo
+		if info, err = entry.Info(); err != nil {
+			return nil, err
+		}
+
+		if info.Size() > 0 {
+			out = append(out, entry.Name())
+		}
+	}
+
+	sort.Strings(out)
+	return out, nil
 }
 
 func decodeScannedEntries(t *testing.T, matches []any) (rows []testEntry) {

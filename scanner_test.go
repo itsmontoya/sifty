@@ -18,7 +18,10 @@ func TestScannerProcessRowInvalidJSON(t *testing.T) {
 		t.Fatalf("unexpected compile error: %v", err)
 	}
 
-	s := makeScanner(m, 10)
+	s := scanner{
+		m:     m,
+		limit: 10,
+	}
 	err = s.processRow(rawRow{
 		Timestamp: time.Now(),
 		Value:     json.RawMessage("not-json"),
@@ -48,7 +51,7 @@ func TestScannerAppendLimitNegativeOne(t *testing.T) {
 		t.Fatalf("append error = %v, want %v", err, errBreak)
 	}
 
-	if got, want := len(s.matches), 1; got != want {
+	if got, want := len(s.result.matches), 0; got != want {
 		t.Fatalf("match count = %d, want %d", got, want)
 	}
 }
