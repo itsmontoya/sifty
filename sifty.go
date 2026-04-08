@@ -62,7 +62,7 @@ func (s *Sifty) Append(in any) (err error) {
 	return s.rotate()
 }
 
-func (s *Sifty) Scan(q query.Query, limit int) (matches []any, err error) {
+func (s *Sifty) Scan(q query.Query) (matches []any, err error) {
 	var m *matcher.Matcher
 	if m, err = matcher.Compile(q); err != nil {
 		return nil, err
@@ -70,29 +70,22 @@ func (s *Sifty) Scan(q query.Query, limit int) (matches []any, err error) {
 
 	var wg sync.WaitGroup
 	ch := make(chan result, 4)
-	//	err = s.iterateFilesInReverse(func(f *iodb.File) (err error) {
-	//
-	//	})
-	err = s.db.Cursor(func(c *iodb.Cursor) (err error) {
-		for f, ok := c.Last(); ok; f, ok = c.Prev() {
-			key := strings.Replace(f.Key(), ".log", "", 1)
-			var ts time.Time
-			if ts, err = time.Parse(time.RFC3339Nano, key); err != nil {
-				return err
-			}
-
-			switch m.RangeBounds(ts) {
-			case 0:
-			case 1:
-				continue
-			case -1:
-				return nil
-			}
-
-			scn := makeScanner(m, f, ch, limit)
-			wg.Go(scn.process)
+	err = s.iterateFilesInReverse(func(f *iodb.File) (err error) {
+		var ts time.Time
+		if ts, err = keyToTimestamp(f.Key()); err != nil {
+			return err
 		}
 
+		switch m.RangeBounds(ts) {
+		case 0:
+		case 1:
+			return nil
+		case -1:
+			return errBreak
+		}
+
+		scn := makeScanner(m, f, ch)
+		wg.Go(scn.process)
 		return nil
 	})
 
@@ -178,4 +171,14 @@ func (s *Sifty) iterateFilesInReverse(fn func(*iodb.File) error) (err error) {
 	})
 
 	return err
+}
+
+func keyToTimestamp(key string) (out time.Time, err error) {
+	stripped := strings.Replace(key, ".log", "", 1)
+	if out, err = time.Parse(time.RFC3339Nano, stripped); err != nil {
+		err = fmt.Errorf(`error parsing key of "%s": %w`, key, err)
+		return out, err
+	}
+
+	return out, nil
 }
