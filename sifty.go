@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"strings"
 	"sync"
 	"time"
 
@@ -67,12 +68,48 @@ func (s *Sifty) Scan(q query.Query, limit int) (matches []any, err error) {
 		return nil, err
 	}
 
-	scn := makeScanner(m, limit)
-	if err = s.f.Read(scn.process); err == errBreak {
-		err = nil
+	var wg sync.WaitGroup
+	ch := make(chan result, 4)
+	//	err = s.iterateFilesInReverse(func(f *iodb.File) (err error) {
+	//
+	//	})
+	err = s.db.Cursor(func(c *iodb.Cursor) (err error) {
+		for f, ok := c.Last(); ok; f, ok = c.Prev() {
+			key := strings.Replace(f.Key(), ".log", "", 1)
+			var ts time.Time
+			if ts, err = time.Parse(time.RFC3339Nano, key); err != nil {
+				return err
+			}
+
+			switch m.RangeBounds(ts) {
+			case 0:
+			case 1:
+				continue
+			case -1:
+				return nil
+			}
+
+			scn := makeScanner(m, f, ch, limit)
+			wg.Go(scn.process)
+		}
+
+		return nil
+	})
+
+	go func() {
+		wg.Wait()
+		close(ch)
+	}()
+
+	for result := range ch {
+		if result.err != nil {
+			return nil, result.err
+		}
+
+		matches = append(matches, result.matches...)
 	}
 
-	return scn.matches, err
+	return matches, nil
 }
 
 func (s *Sifty) append(in any) (err error) {
@@ -87,7 +124,7 @@ func (s *Sifty) rotate() (err error) {
 
 	s.count = 0
 	createdAt := time.Now()
-	key := fmt.Sprintf("%s.log", createdAt.Format(time.RFC3339))
+	key := fmt.Sprintf("%s.log", createdAt.Format(time.RFC3339Nano))
 	s.f, err = s.db.Create(key)
 	s.createdFileAt = createdAt
 	return err
@@ -129,4 +166,16 @@ func (s *Sifty) setCountFromRows(r io.Reader) error {
 func (s *Sifty) setCountFromRow(bs json.RawMessage) (err error) {
 	s.count++
 	return nil
+}
+
+func (s *Sifty) iterateFilesInReverse(fn func(*iodb.File) error) (err error) {
+	err = s.db.Cursor(func(c *iodb.Cursor) (err error) {
+		for f, ok := c.Last(); ok && err == nil; f, ok = c.Prev() {
+			err = fn(f)
+		}
+
+		return nil
+	})
+
+	return err
 }
