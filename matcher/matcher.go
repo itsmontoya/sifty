@@ -2,6 +2,7 @@ package matcher
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/itsmontoya/sifty/docview"
 	"github.com/itsmontoya/sifty/query"
@@ -16,6 +17,7 @@ func Compile(q query.Query) (out *Matcher, err error) {
 	}
 
 	var m Matcher
+	m.tr = q.TimeRange
 	if q.Filter.IsZero() {
 		m.root = makeAnyNode()
 		return &m, nil
@@ -27,11 +29,30 @@ func Compile(q query.Query) (out *Matcher, err error) {
 
 // Matcher evaluates compiled query filters against a DocView input.
 type Matcher struct {
+	tr *query.TimeRange
+
 	root node
 }
 
 // IsMatch evaluates the compiled filter against in.
 // It returns any error emitted by the underlying DocView.
-func (m *Matcher) IsMatch(in docview.DocView) (ok bool, err error) {
+func (m *Matcher) IsMatch(ts time.Time, in docview.DocView) (ok bool, err error) {
+	if !m.isInRange(ts) {
+		return false, nil
+	}
+
 	return m.root.eval(in)
+}
+
+func (m *Matcher) isInRange(ts time.Time) (ok bool) {
+	switch {
+	case m.tr == nil:
+		return true
+	case m.tr.From != nil && m.tr.From.After(ts):
+		return false
+	case m.tr.To != nil && m.tr.To.Before(ts):
+		return false
+	default:
+		return true
+	}
 }
