@@ -70,6 +70,7 @@ func (s *Sifty) Scan(q query.Query) (matches []any, err error) {
 
 	var wg sync.WaitGroup
 	ch := make(chan result, 4)
+	var errs []error
 	err = s.iterateFilesInReverse(func(f *iodb.File) (err error) {
 		var ts time.Time
 		if ts, err = keyToTimestamp(f.Key()); err != nil {
@@ -89,6 +90,13 @@ func (s *Sifty) Scan(q query.Query) (matches []any, err error) {
 		return nil
 	})
 
+	switch err {
+	case nil:
+	case errBreak:
+	default:
+		errs = append(errs, err)
+	}
+
 	go func() {
 		wg.Wait()
 		close(ch)
@@ -96,13 +104,14 @@ func (s *Sifty) Scan(q query.Query) (matches []any, err error) {
 
 	for result := range ch {
 		if result.err != nil {
-			return nil, result.err
+			errs = append(errs, result.err)
+			continue
 		}
 
 		matches = append(matches, result.matches...)
 	}
 
-	return matches, nil
+	return matches, errors.Join(errs...)
 }
 
 func (s *Sifty) append(in any) (err error) {
@@ -167,7 +176,7 @@ func (s *Sifty) iterateFilesInReverse(fn func(*iodb.File) error) (err error) {
 			err = fn(f)
 		}
 
-		return nil
+		return err
 	})
 
 	return err
