@@ -1,63 +1,53 @@
 package sifty
 
 import (
-	"encoding/json"
 	"io"
 
+	"github.com/itsmontoya/iodb"
 	"github.com/itsmontoya/sifty/docview"
 	"github.com/itsmontoya/sifty/docview/jsondoc"
 	"github.com/itsmontoya/sifty/matcher"
 )
 
-func makeScanner(m *matcher.Matcher, limit int) (s scanner) {
+func makeScanner(m *matcher.Matcher, f *iodb.File, matches chan result) (s scanner) {
 	s.m = m
-	s.limit = limit
+	s.f = f
+	s.ch = matches
 	return s
 }
 
 type scanner struct {
-	m     *matcher.Matcher
-	limit int
+	m *matcher.Matcher
+	f *iodb.File
 
-	matches []any
+	ch     chan result
+	result result
 }
 
-func (s *scanner) process(r io.Reader) (err error) {
+func (s *scanner) process() {
+	s.result.err = s.f.Read(s.processReader)
+	s.ch <- s.result
+}
+
+func (s *scanner) processReader(r io.Reader) error {
 	return iterateRows(r, s.processRow)
 }
 
-func (s *scanner) processRow(raw json.RawMessage) (err error) {
+func (s *scanner) processRow(row rawRow) (err error) {
 	var view docview.DocView
-	if view, err = jsondoc.NewJSONDoc(raw); err != nil {
+	if view, err = jsondoc.NewJSONDoc(row.Value); err != nil {
 		return err
 	}
 
 	var ok bool
-	if ok, err = s.m.IsMatch(view); err != nil {
+	if ok, err = s.m.IsMatch(row.Timestamp, view); !ok || err != nil {
 		return err
 	}
 
-	if !ok {
-		return nil
-	}
-
-	return s.append(raw)
+	return s.append(row.Value)
 }
 
 func (s *scanner) append(value any) (err error) {
-	s.matches = append(s.matches, value)
-	if s.isAtLimit() {
-		return errBreak
-	}
-
+	s.result.matches = append(s.result.matches, value)
 	return nil
-}
-
-func (s *scanner) isAtLimit() (ok bool) {
-	switch s.limit {
-	case -1:
-		return true
-	default:
-		return len(s.matches) >= s.limit
-	}
 }

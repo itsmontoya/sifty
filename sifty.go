@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"strings"
 	"sync"
 	"time"
 
@@ -42,6 +43,8 @@ type Sifty struct {
 	db *iodb.DB
 
 	f *iodb.File
+	// Timestamp for when the current file was created
+	createdFileAt time.Time
 
 	count    int
 	maxCount int
@@ -59,18 +62,56 @@ func (s *Sifty) Append(in any) (err error) {
 	return s.rotate()
 }
 
-func (s *Sifty) Scan(q query.Query, limit int) (matches []any, err error) {
+func (s *Sifty) Scan(q query.Query) (matches []any, err error) {
 	var m *matcher.Matcher
 	if m, err = matcher.Compile(q); err != nil {
 		return nil, err
 	}
 
-	scn := makeScanner(m, limit)
-	if err = s.f.Read(scn.process); err == errBreak {
-		err = nil
+	var wg sync.WaitGroup
+	ch := make(chan result, 4)
+	var errs []error
+	err = s.iterateFilesInReverse(func(f *iodb.File) (err error) {
+		var ts time.Time
+		if ts, err = keyToTimestamp(f.Key()); err != nil {
+			return err
+		}
+
+		switch m.RangeBounds(ts) {
+		case 0:
+		case 1:
+			return nil
+		case -1:
+			return errBreak
+		}
+
+		scn := makeScanner(m, f, ch)
+		wg.Go(scn.process)
+		return nil
+	})
+
+	switch err {
+	case nil:
+	case errBreak:
+	default:
+		errs = append(errs, err)
 	}
 
-	return scn.matches, err
+	go func() {
+		wg.Wait()
+		close(ch)
+	}()
+
+	for result := range ch {
+		if result.err != nil {
+			errs = append(errs, result.err)
+			continue
+		}
+
+		matches = append(matches, result.matches...)
+	}
+
+	return matches, errors.Join(errs...)
 }
 
 func (s *Sifty) append(in any) (err error) {
@@ -84,8 +125,10 @@ func (s *Sifty) rotate() (err error) {
 	}
 
 	s.count = 0
-	key := fmt.Sprintf("%s.log", time.Now().Format(time.RFC3339))
+	createdAt := time.Now()
+	key := fmt.Sprintf("%s.log", createdAt.Format(time.RFC3339Nano))
 	s.f, err = s.db.Create(key)
+	s.createdFileAt = createdAt
 	return err
 }
 
@@ -125,4 +168,26 @@ func (s *Sifty) setCountFromRows(r io.Reader) error {
 func (s *Sifty) setCountFromRow(bs json.RawMessage) (err error) {
 	s.count++
 	return nil
+}
+
+func (s *Sifty) iterateFilesInReverse(fn func(*iodb.File) error) (err error) {
+	err = s.db.Cursor(func(c *iodb.Cursor) (err error) {
+		for f, ok := c.Last(); ok && err == nil; f, ok = c.Prev() {
+			err = fn(f)
+		}
+
+		return err
+	})
+
+	return err
+}
+
+func keyToTimestamp(key string) (out time.Time, err error) {
+	stripped := strings.Replace(key, ".log", "", 1)
+	if out, err = time.Parse(time.RFC3339Nano, stripped); err != nil {
+		err = fmt.Errorf(`error parsing key of "%s": %w`, key, err)
+		return out, err
+	}
+
+	return out, nil
 }

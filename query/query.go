@@ -3,10 +3,11 @@ package query
 import "fmt"
 
 type Query struct {
-	Filter Clause      `json:"filter,omitempty"`
-	Sort   []SortField `json:"sort,omitempty"`
-	Limit  *int        `json:"limit,omitempty"`
-	Offset int         `json:"offset,omitempty"`
+	Filter    Clause      `json:"filter,omitempty"`
+	TimeRange *TimeRange  `json:"timeRange,omitempty"`
+	Sort      []SortField `json:"sort,omitempty"`
+	Limit     *int        `json:"limit,omitempty"`
+	Offset    int         `json:"offset,omitempty"`
 }
 
 func (q Query) Validate() error {
