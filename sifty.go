@@ -68,7 +68,12 @@ func (s *Sifty) Scan(q query.Query) (matches []any, err error) {
 		return nil, err
 	}
 
-	var wg sync.WaitGroup
+	var req request
+	if req.bkt, err = s.db.GetOrCreateBucket("queries"); err != nil {
+		return nil, err
+	}
+
+	req.m = m
 	ch := make(chan result, 4)
 	var errs []error
 	err = s.iterateFilesInReverse(func(f *iodb.File) (err error) {
@@ -85,8 +90,12 @@ func (s *Sifty) Scan(q query.Query) (matches []any, err error) {
 			return errBreak
 		}
 
-		scn := makeScanner(m, f, ch)
-		wg.Go(scn.process)
+		var scn scanner
+		if scn, err = makeScanner(&req, f); err != nil {
+			return err
+		}
+
+		req.wg.Go(scn.process)
 		return nil
 	})
 
@@ -98,7 +107,7 @@ func (s *Sifty) Scan(q query.Query) (matches []any, err error) {
 	}
 
 	go func() {
-		wg.Wait()
+		req.wg.Wait()
 		close(ch)
 	}()
 
