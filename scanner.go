@@ -1,32 +1,36 @@
 package sifty
 
 import (
+	"encoding/json"
 	"io"
 
 	"github.com/itsmontoya/iodb"
 	"github.com/itsmontoya/sifty/docview"
 	"github.com/itsmontoya/sifty/docview/jsondoc"
-	"github.com/itsmontoya/sifty/matcher"
 )
 
-func makeScanner(m *matcher.Matcher, f *iodb.File, matches chan result) (s scanner) {
-	s.m = m
-	s.f = f
-	s.ch = matches
-	return s
+func makeScanner(r *request, f *iodb.File) (s scanner, err error) {
+	s.request = r
+	s.in = f
+	if s.out, err = r.bkt.Create(f.Key()); err != nil {
+		return s, err
+	}
+
+	return s, nil
 }
 
 type scanner struct {
-	m *matcher.Matcher
-	f *iodb.File
-
-	ch     chan result
+	*request
 	result result
+
+	in  *iodb.File
+	out *iodb.File
 }
 
 func (s *scanner) process() {
-	s.result.err = s.f.Read(s.processReader)
-	s.ch <- s.result
+	var errs []error
+	errs = append(errs, s.in.Read(s.processReader))
+
 }
 
 func (s *scanner) processReader(r io.Reader) error {
@@ -47,7 +51,10 @@ func (s *scanner) processRow(row rawRow) (err error) {
 	return s.append(row.Value)
 }
 
-func (s *scanner) append(value any) (err error) {
-	s.result.matches = append(s.result.matches, value)
-	return nil
+func (s *scanner) append(value json.RawMessage) (err error) {
+	err = s.out.Append(func(w io.Writer) (err error) {
+		return json.NewEncoder(w).Encode(value)
+	})
+
+	return err
 }
