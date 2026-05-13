@@ -1,6 +1,6 @@
 package language
 
-func ToAST(ts []Token) (out ASTQuery, err error) {
+func ToAST(ts []Token) (out AST, err error) {
 	p := makeParser(ts)
 	if p.isAtEnd() {
 		return out, nil
@@ -29,8 +29,8 @@ func ToAST(ts []Token) (out ASTQuery, err error) {
 	return out, nil
 }
 
-// ASTQuery is the parsed query representation.
-type ASTQuery struct {
+// AST is the parsed query representation.
+type AST struct {
 	Filter Expr
 	Sort   []SortExpr
 	Limit  *int
