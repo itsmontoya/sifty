@@ -10,12 +10,14 @@ var (
 
 // Expr is the marker interface for all filter expression nodes.
 type Expr interface {
-	isExpr()
+	isExpr() bool
 }
 
 type expr struct{}
 
-func (e expr) isExpr() {}
+func (e expr) isExpr() bool {
+	return true
+}
 
 // AndExpr represents a logical AND.
 type AndExpr struct {
