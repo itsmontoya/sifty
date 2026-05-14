@@ -181,12 +181,20 @@ func (p *parser) parseCondition() (out ConditionExpr, err error) {
 
 	case p.match(KindIn):
 		out, err = p.parseTemporalCondition()
+
+	case p.match(KindGreater):
+		out, err = p.parseComparisonCondition()
+	case p.match(KindLess):
+		out, err = p.parseComparisonCondition()
+	case p.match(KindAt):
+		out, err = p.parseAtComparisonCondition()
+
 	default:
 		return out, makeParseError("expected condition operator after field", p.peek())
 	}
 
 	out.Field = fieldTok.Lexeme
-	return out, nil
+	return out, err
 }
 
 func (p *parser) parseIsCondition() (out ConditionExpr, err error) {
@@ -254,6 +262,46 @@ func (p *parser) parseContainsCondition() (out ConditionExpr, err error) {
 	out.Op = OpNotContains
 	out.Value = v
 	return out, nil
+}
+
+func (p *parser) parseComparisonCondition() (out ConditionExpr, err error) {
+	switch p.previous().Kind {
+	case KindGreater:
+		if _, err = p.expect(KindThan, "expected 'than' after 'greater'"); err != nil {
+			return out, err
+		}
+
+		out.Op = OpGt
+		out.Value, err = p.parseConditionValue()
+
+	case KindLess:
+		if _, err = p.expect(KindThan, "expected 'than' after 'less'"); err != nil {
+			return out, err
+		}
+
+		out.Op = OpLt
+		out.Value, err = p.parseConditionValue()
+
+	default:
+		return out, makeParseError("expected comparison condition keyword", p.previous())
+	}
+
+	return out, err
+}
+
+func (p *parser) parseAtComparisonCondition() (out ConditionExpr, err error) {
+	switch {
+	case p.match(KindLeast):
+		out.Op = OpGte
+	case p.match(KindMost):
+		out.Op = OpLte
+
+	default:
+		return out, makeParseError("expected 'least' or 'most' after 'at'", p.peek())
+	}
+
+	out.Value, err = p.parseConditionValue()
+	return out, err
 }
 
 func (p *parser) parseTemporalCondition() (out ConditionExpr, err error) {
@@ -350,19 +398,89 @@ func (p *parser) parseConditionValue() (out any, err error) {
 }
 
 // ----- Sort / limit / skip -----
-
 func (p *parser) parseSortClause() (out []SortExpr, err error) {
-	// TODO: parse "sorted by ..."
+	if !p.match(KindSorted) {
+		return out, nil
+	}
+
+	if _, err = p.expect(KindBy, "expected 'by' after 'sorted'"); err != nil {
+		return nil, err
+	}
+
+	var field SortExpr
+	if field, err = p.parseSortField(); err != nil {
+		return nil, err
+	}
+
+	out = append(out, field)
+
+	for p.match(KindComma) {
+		if p.check(KindEOF) {
+			return nil, makeParseError("expected sort field after ','", p.peek())
+		}
+
+		if field, err = p.parseSortField(); err != nil {
+			return nil, err
+		}
+
+		out = append(out, field)
+	}
+
+	return out, nil
+}
+
+func (p *parser) parseSortField() (out SortExpr, err error) {
+	var fieldTok Token
+	if fieldTok, err = p.expect(KindIdentifier, "expected sort field"); err != nil {
+		return out, err
+	}
+
+	out.Field = fieldTok.Lexeme
+	out.Desc = false // default ascending
+
+	switch {
+	case p.match(KindAscending):
+		out.Desc = false
+	case p.match(KindDescending):
+		out.Desc = true
+	}
+
 	return out, nil
 }
 
 func (p *parser) parseLimitClause() (out *int, err error) {
-	// TODO: parse "limit <number>"
+	if !p.match(KindLimit) {
+		return nil, nil
+	}
+
+	var t Token
+	if t, err = p.expect(KindNumber, "expected number after 'limit'"); err != nil {
+		return nil, err
+	}
+
+	var i int
+	if i, err = parseIntToken(t); err != nil {
+		return nil, makeParseError(err.Error(), t)
+	}
+
+	out = &i
 	return out, nil
 }
 
-func (p *parser) parseSkipClause() (out *int, err error) {
-	// TODO: parse "skip <number>"
+func (p *parser) parseSkipClause() (out int, err error) {
+	if !p.match(KindSkip) {
+		return 0, nil
+	}
+
+	var t Token
+	if t, err = p.expect(KindNumber, "expected number after 'skip'"); err != nil {
+		return 0, err
+	}
+
+	if out, err = parseIntToken(t); err != nil {
+		return 0, makeParseError(err.Error(), t)
+	}
+
 	return out, nil
 }
 
