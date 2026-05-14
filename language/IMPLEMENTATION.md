@@ -678,6 +678,25 @@ Good:
 * `before`
 * `after`
 * `in the last`
+
+---
+
+## Sorted By: Decisions (May 12, 2026)
+
+Confirmed behavior for `sorted by`:
+
+* Allow `sorted by` with no filter expression (for full dataset sorting).
+* Default direction to ascending when omitted.
+* Allow mixed explicit/implicit directions (`sorted by created, score descending`).
+* Reject duplicate sort fields as an error.
+* Check field validity during validation (not parse).
+* Treat sort keywords as case-insensitive.
+* Treat a second `sorted by` clause as a hard parse error.
+
+Pending clarification:
+
+* Trailing comma behavior is still open. Example: `sorted by created,`
+* Recommendation: reject with a targeted parse error, such as `expected sort field after ','`.
 * `today`
 * `this week`
 * `this month`
