@@ -169,26 +169,26 @@ func TestToAST_LimitAndSkipClauses(t *testing.T) {
 		name      string
 		input     string
 		wantLimit *int
-		wantSkip  *int
+		wantSkip  int
 		wantErr   bool
 	}{
 		{
 			name:      "limit only",
 			input:     "status is active limit 50",
 			wantLimit: intPtr(50),
-			wantSkip:  nil,
+			wantSkip:  0,
 		},
 		{
 			name:      "skip only",
 			input:     "status is active skip 100",
 			wantLimit: nil,
-			wantSkip:  intPtr(100),
+			wantSkip:  100,
 		},
 		{
 			name:      "limit and skip",
 			input:     "status is active limit 50 skip 100",
 			wantLimit: intPtr(50),
-			wantSkip:  intPtr(100),
+			wantSkip:  100,
 		},
 		{
 			name:    "limit missing number returns parse error",
@@ -298,7 +298,7 @@ func TestToAST_CompleteQueryCombinations(t *testing.T) {
 		wantTree  string
 		wantSort  []SortExpr
 		wantLimit *int
-		wantSkip  *int
+		wantSkip  int
 	}{
 		{
 			name:      "simple filter sort limit skip",
@@ -306,7 +306,7 @@ func TestToAST_CompleteQueryCombinations(t *testing.T) {
 			wantTree:  "cond(status,eq,active)",
 			wantSort:  []SortExpr{{Field: "created", Desc: false}},
 			wantLimit: intPtr(50),
-			wantSkip:  intPtr(100),
+			wantSkip:  100,
 		},
 		{
 			name:      "grouped filter with multiple sorts and paging",
@@ -314,7 +314,7 @@ func TestToAST_CompleteQueryCombinations(t *testing.T) {
 			wantTree:  "or(cond(status,eq,active),cond(status,eq,pending))",
 			wantSort:  []SortExpr{{Field: "created", Desc: true}, {Field: "score", Desc: false}},
 			wantLimit: intPtr(25),
-			wantSkip:  intPtr(10),
+			wantSkip:  10,
 		},
 	}
 

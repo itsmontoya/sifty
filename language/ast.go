@@ -33,6 +33,7 @@ func ToAST(ts []Token) (out AST, err error) {
 type AST struct {
 	Filter Expr
 	Sort   []SortExpr
-	Limit  *int
-	Skip   *int
+
+	Limit *int
+	Skip  int
 }
