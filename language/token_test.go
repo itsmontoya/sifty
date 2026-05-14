@@ -326,7 +326,7 @@ func TestToTokens(t *testing.T) {
 			want: []language.Token{
 				{
 					Kind:   language.KindString,
-					Lexeme: `"é"`,
+					Lexeme: "é",
 					Position: language.Position{
 						Offset: 0,
 						Line:   1,
@@ -428,7 +428,7 @@ func TestToTokens(t *testing.T) {
 				},
 				{
 					Kind:   language.KindString,
-					Lexeme: `"acme corp"`,
+					Lexeme: "acme corp",
 					Position: language.Position{
 						Offset: 18,
 						Line:   1,
