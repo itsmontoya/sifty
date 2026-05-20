@@ -3,7 +3,10 @@ package sifty
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
+	"strings"
+	"time"
 )
 
 func iterateRows[T any](r io.Reader, fn func(T) error) (err error) {
@@ -22,4 +25,14 @@ func iterateRows[T any](r io.Reader, fn func(T) error) (err error) {
 	}
 
 	return err
+}
+
+func keyToTimestamp(key string) (out time.Time, err error) {
+	stripped := strings.Replace(key, ".log", "", 1)
+	if out, err = time.Parse(time.RFC3339Nano, stripped); err != nil {
+		err = fmt.Errorf(`error parsing key of "%s": %w`, key, err)
+		return out, err
+	}
+
+	return out, nil
 }

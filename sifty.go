@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"strings"
 	"sync"
 	"time"
 
@@ -180,14 +179,4 @@ func (s *Sifty) iterateFilesInReverse(fn func(*iodb.File) error) (err error) {
 	})
 
 	return err
-}
-
-func keyToTimestamp(key string) (out time.Time, err error) {
-	stripped := strings.Replace(key, ".log", "", 1)
-	if out, err = time.Parse(time.RFC3339Nano, stripped); err != nil {
-		err = fmt.Errorf(`error parsing key of "%s": %w`, key, err)
-		return out, err
-	}
-
-	return out, nil
 }
