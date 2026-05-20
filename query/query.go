@@ -1,16 +1,21 @@
 package query
 
-import "fmt"
+import (
+	"crypto/sha256"
+	"encoding/json"
+	"fmt"
+)
 
 type Query struct {
 	Filter    Clause      `json:"filter,omitempty"`
 	TimeRange *TimeRange  `json:"timeRange,omitempty"`
 	Sort      []SortField `json:"sort,omitempty"`
-	Limit     *int        `json:"limit,omitempty"`
-	Offset    int         `json:"offset,omitempty"`
+
+	Limit  *int `json:"limit,omitempty"`
+	Offset int  `json:"offset,omitempty"`
 }
 
-func (q Query) Validate() error {
+func (q *Query) Validate() error {
 	if q.Limit != nil && *q.Limit < 0 {
 		return fmt.Errorf("limit must be >= 0")
 	}
@@ -32,4 +37,17 @@ func (q Query) Validate() error {
 	}
 
 	return nil
+}
+
+func (q *Query) Hash() (out string, err error) {
+	h := sha256.New()
+	v := *q
+	v.Limit = nil
+	v.Offset = 0
+
+	if err = json.NewEncoder(h).Encode(v); err != nil {
+		return "", err
+	}
+
+	return string(h.Sum(nil)), nil
 }
